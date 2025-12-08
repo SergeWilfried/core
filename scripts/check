@@ -1,0 +1,6 @@
+#!/bin/bash
+
+SCRIPTS_DIR=$(dirname "$(readlink -e "$0")")
+
+"$SCRIPTS_DIR/check-code" || exit 1
+"$SCRIPTS_DIR/check-format" || exit 1

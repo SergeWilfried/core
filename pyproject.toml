@@ -1,0 +1,17 @@
+[project]
+name = "python-starter-template"
+version = "0.1.0"
+description = "Add your description here"
+license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "ruff>=0.11.2",
+]
+
+[tool.uv]
+required-version = "==0.8.14"

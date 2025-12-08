@@ -1,0 +1,6 @@
+{
+  "coc.preferences.formatOnSave": true,
+  "python.formatting.provider": "ruff",
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true
+}

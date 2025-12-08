@@ -1,0 +1,7 @@
+# Checkpoint files
+.ipynb_checkpoints/
+
+# Python cached files
+__pycache__/
+*.py[cod]
+*$py.class
