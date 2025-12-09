@@ -17,6 +17,8 @@ from ..services import (
     CardService,
     LedgerService,
 )
+from ..services.organizations import OrganizationService
+from ..services.users import UserService
 
 
 # Security
@@ -86,6 +88,20 @@ async def get_ledger_service(
 ) -> LedgerService:
     """Get Ledger service instance"""
     return LedgerService(repo)
+
+
+async def get_organization_service(
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+) -> OrganizationService:
+    """Get Organization service instance"""
+    return OrganizationService(repo)
+
+
+async def get_user_service(
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+) -> UserService:
+    """Get User service instance"""
+    return UserService(repo)
 
 
 async def verify_api_key(

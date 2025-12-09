@@ -1,0 +1,195 @@
+name: Nightly Tests
+
+on:
+  schedule:
+    # Run every night at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  # ============================================================================
+  # Full Test Suite
+  # ============================================================================
+  full-test-suite:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.16"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run all tests
+        run: uv run pytest -v --cov=core --cov-report=xml --cov-report=html
+
+      - name: Archive coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov/
+          retention-days: 7
+
+  # ============================================================================
+  # Integration Tests
+  # ============================================================================
+  integration-tests:
+    name: Integration Tests (Full)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.16"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run integration tests
+        run: uv run pytest tests/integration/ -v --maxfail=5
+        env:
+          FORMANCE_TEST_BASE_URL: ${{ secrets.FORMANCE_SANDBOX_URL }}
+          FORMANCE_TEST_CLIENT_ID: ${{ secrets.FORMANCE_TEST_CLIENT_ID }}
+          FORMANCE_TEST_CLIENT_SECRET: ${{ secrets.FORMANCE_TEST_CLIENT_SECRET }}
+        continue-on-error: true
+
+  # ============================================================================
+  # Dependency Updates Check
+  # ============================================================================
+  dependency-updates:
+    name: Check Dependency Updates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.16"
+
+      - name: Check for updates
+        run: |
+          uv pip list --outdated
+          echo "::notice::Check output above for outdated dependencies"
+
+  # ============================================================================
+  # Security Scan
+  # ============================================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.16"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run bandit
+        run: |
+          uv pip install bandit
+          uv run bandit -r core -f json -o bandit-report.json || true
+
+      - name: Run safety
+        run: |
+          uv pip install safety
+          uv run safety check --json --output safety-report.json || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+          retention-days: 30
+
+  # ============================================================================
+  # Performance Benchmarks
+  # ============================================================================
+  performance-benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.16"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run performance tests
+        run: |
+          uv pip install pytest-benchmark
+          uv run pytest tests/ --benchmark-only --benchmark-json=benchmark.json
+        continue-on-error: true
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'pytest'
+          output-file-path: benchmark.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+
+  # ============================================================================
+  # Notification
+  # ============================================================================
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [full-test-suite, integration-tests, security-scan]
+    if: failure()
+
+    steps:
+      - name: Send notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: 'Nightly tests failed!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -7,7 +7,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
 
-from ...models.payment import Payment, PaymentMethod, PaymentStatus
+from ...models.payment import Payment, PaymentMethod, PaymentStatus, MobileMoneyProvider
 from ...services import PaymentService
 from ..dependencies import get_payment_service, get_current_user
 
@@ -42,6 +42,25 @@ class WirePaymentRequest(BaseModel):
     amount: Decimal = Field(..., gt=0, description="Amount")
     currency: str = Field(default="USD", description="Currency")
     description: Optional[str] = Field(default=None, description="Description")
+
+
+class MobileMoneyPaymentRequest(BaseModel):
+    from_account_id: str = Field(..., description="Source account")
+    phone_number: str = Field(
+        ...,
+        description="Recipient phone number in E.164 format (e.g., +254712345678)"
+    )
+    provider: MobileMoneyProvider = Field(..., description="Mobile money provider")
+    country_code: str = Field(
+        ...,
+        description="ISO 3166-1 alpha-2 country code (e.g., KE, UG)",
+        min_length=2,
+        max_length=2
+    )
+    amount: Decimal = Field(..., gt=0, description="Amount")
+    currency: str = Field(..., description="Currency (e.g., KES, UGX, TZS)")
+    description: Optional[str] = Field(default=None, description="Description")
+    metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
 
 class PaymentResponse(BaseModel):
@@ -126,6 +145,32 @@ async def create_wire_payment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create wire payment: {str(e)}",
+        )
+
+
+@router.post("/mobile-money", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
+async def create_mobile_money_payment(
+    request: MobileMoneyPaymentRequest,
+    service: Annotated[PaymentService, Depends(get_payment_service)],
+    current_user: Annotated[dict, Depends(get_current_user)],
+):
+    """Create a mobile money payment"""
+    try:
+        payment = await service.process_mobile_money_payment(
+            from_account_id=request.from_account_id,
+            phone_number=request.phone_number,
+            provider=request.provider,
+            country_code=request.country_code,
+            amount=request.amount,
+            currency=request.currency,
+            description=request.description,
+            metadata=request.metadata,
+        )
+        return payment
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create mobile money payment: {str(e)}",
         )
 
 

@@ -15,7 +15,23 @@ from ..exceptions import (
 
 # Currency codes (ISO 4217)
 VALID_CURRENCIES = {
-    "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "BRL"
+    "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "BRL",
+    # African currencies for mobile money
+    "KES", "TZS", "UGX", "GHS", "ZAR", "XOF", "XAF", "ZMW", "ZWL", "MZN"
+}
+
+# Mobile money provider to country mapping
+MOBILE_MONEY_PROVIDER_COUNTRIES = {
+    "mpesa": ["KE", "TZ", "MZ", "ZA"],
+    "mtn": ["UG", "GH", "CI", "CM", "ZM", "BJ", "CG", "RW"],
+    "airtel": ["KE", "TZ", "UG", "ZM", "MW", "NG", "CD", "RW", "GA"],
+    "orange": ["SN", "ML", "BF", "CI", "CM", "NE", "MG", "GN"],
+    "vodacom": ["ZA", "TZ", "MZ", "LS"],
+    "tigo": ["TZ", "RW", "GH"],
+    "ecocash": ["ZW", "ZM"],
+    "wave": ["SN", "CI", "BF", "ML"],
+    "chipper": ["KE", "UG", "GH", "NG", "ZA", "TZ", "RW"],
+    "flutterwave": ["KE", "UG", "GH", "NG", "ZA", "TZ", "RW"],  # Pan-African aggregator
 }
 
 
@@ -229,4 +245,74 @@ def validate_card_number(card_number: str) -> None:
     if checksum % 10 != 0:
         raise ValidationError(
             "Invalid card number"
+        )
+
+
+def validate_e164_phone(phone: str) -> None:
+    """
+    Validate phone number in E.164 format
+
+    E.164 format: +[country code][subscriber number]
+    Example: +254712345678 (Kenya)
+
+    Args:
+        phone: Phone number to validate
+
+    Raises:
+        ValidationError: If phone number is invalid
+    """
+    # E.164 pattern: + followed by 1-3 digit country code and up to 14 more digits
+    e164_pattern = r'^\+[1-9]\d{1,14}$'
+
+    if not re.match(e164_pattern, phone):
+        raise ValidationError(
+            f"Invalid phone number format. Must be in E.164 format (e.g., +254712345678): {phone}"
+        )
+
+
+def validate_mobile_money_provider(provider: str, country_code: str) -> None:
+    """
+    Validate that a mobile money provider operates in the specified country
+
+    Args:
+        provider: Mobile money provider code (e.g., 'mpesa', 'mtn')
+        country_code: ISO 3166-1 alpha-2 country code (e.g., 'KE', 'UG')
+
+    Raises:
+        ValidationError: If provider doesn't operate in the country
+    """
+    provider_lower = provider.lower()
+    country_upper = country_code.upper()
+
+    if provider_lower not in MOBILE_MONEY_PROVIDER_COUNTRIES:
+        raise ValidationError(
+            f"Unknown mobile money provider: {provider}"
+        )
+
+    supported_countries = MOBILE_MONEY_PROVIDER_COUNTRIES[provider_lower]
+    if country_upper not in supported_countries:
+        raise ValidationError(
+            f"Provider '{provider}' does not operate in country '{country_code}'. "
+            f"Supported countries: {', '.join(supported_countries)}"
+        )
+
+
+def validate_country_code(country_code: str) -> None:
+    """
+    Validate ISO 3166-1 alpha-2 country code
+
+    Args:
+        country_code: Country code to validate
+
+    Raises:
+        ValidationError: If country code is invalid
+    """
+    if not country_code or len(country_code) != 2:
+        raise ValidationError(
+            f"Invalid country code: {country_code}. Must be 2-letter ISO 3166-1 alpha-2 code"
+        )
+
+    if not country_code.isalpha():
+        raise ValidationError(
+            f"Country code must contain only letters: {country_code}"
         )

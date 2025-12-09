@@ -6,9 +6,14 @@ from typing import Optional
 from decimal import Decimal
 import logging
 
-from ..models.payment import Payment, PaymentMethod, PaymentStatus
+from ..models.payment import Payment, PaymentMethod, PaymentStatus, MobileMoneyProvider
 from ..repositories.formance import FormanceRepository
 from ..exceptions import PaymentProcessingError
+from ..utils.validators import (
+    validate_e164_phone,
+    validate_mobile_money_provider,
+    validate_country_code,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -182,4 +187,66 @@ class PaymentService:
             payment_method=PaymentMethod.WIRE,
             destination=destination,
             description=description or "Wire Transfer",
+        )
+
+    async def process_mobile_money_payment(
+        self,
+        from_account_id: str,
+        phone_number: str,
+        provider: MobileMoneyProvider,
+        country_code: str,
+        amount: Decimal,
+        currency: str,
+        description: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> Payment:
+        """
+        Process a mobile money payment
+
+        Args:
+            from_account_id: Source account
+            phone_number: Recipient phone number in E.164 format (e.g., +254712345678)
+            provider: Mobile money provider (e.g., MPESA, MTN_MOBILE_MONEY)
+            country_code: ISO 3166-1 alpha-2 country code (e.g., KE, UG)
+            amount: Payment amount
+            currency: Payment currency (e.g., KES, UGX)
+            description: Payment description
+            metadata: Additional metadata
+
+        Returns:
+            Created Payment object
+
+        Raises:
+            ValidationError: If phone number, provider, or country code is invalid
+        """
+        # Validate inputs
+        validate_e164_phone(phone_number)
+        validate_country_code(country_code)
+        validate_mobile_money_provider(provider.value, country_code)
+
+        logger.info(
+            f"Processing mobile money payment: {amount} {currency} "
+            f"to {phone_number} via {provider.value} in {country_code}"
+        )
+
+        # Format destination as: provider:country:phone
+        # e.g., "mpesa:KE:+254712345678"
+        destination = f"{provider.value}:{country_code.upper()}:{phone_number}"
+
+        # Add provider and country to metadata for tracking
+        payment_metadata = metadata or {}
+        payment_metadata.update({
+            "mobile_money_provider": provider.value,
+            "country_code": country_code.upper(),
+            "phone_number": phone_number,
+        })
+
+        return await self.create_payment(
+            from_account_id=from_account_id,
+            amount=amount,
+            currency=currency,
+            payment_method=PaymentMethod.MOBILE_MONEY,
+            destination=destination,
+            description=description or f"Mobile Money Transfer via {provider.value}",
+            metadata=payment_metadata,
         )

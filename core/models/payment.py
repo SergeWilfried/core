@@ -18,6 +18,22 @@ class PaymentMethod(str, Enum):
     CHECK = "check"
     CRYPTO = "crypto"
     INTERNAL = "internal"
+    MOBILE_MONEY = "mobile_money"
+
+
+class MobileMoneyProvider(str, Enum):
+    """Mobile money providers"""
+
+    MPESA = "mpesa"  # Kenya, Tanzania, Mozambique, South Africa
+    MTN_MOBILE_MONEY = "mtn"  # Uganda, Ghana, Ivory Coast, Cameroon, Zambia
+    AIRTEL_MONEY = "airtel"  # Multiple African countries
+    ORANGE_MONEY = "orange"  # West Africa (Senegal, Mali, Burkina Faso, etc.)
+    VODACOM = "vodacom"  # South Africa
+    TIGO_PESA = "tigo"  # Tanzania
+    ECOCASH = "ecocash"  # Zimbabwe
+    WAVE = "wave"  # Senegal, Ivory Coast, Burkina Faso, Mali
+    CHIPPER_CASH = "chipper"  # Pan-African
+    FLUTTERWAVE = "flutterwave"  # Pan-African aggregator
 
 
 class PaymentStatus(str, Enum):
@@ -73,3 +89,27 @@ class Payment(BaseModel):
     def can_cancel(self) -> bool:
         """Check if payment can be cancelled"""
         return self.status in [PaymentStatus.PENDING, PaymentStatus.PROCESSING]
+
+
+class MobileMoneyDestination(BaseModel):
+    """Mobile money destination details"""
+
+    phone_number: str = Field(..., description="Phone number in E.164 format")
+    provider: MobileMoneyProvider = Field(..., description="Mobile money provider")
+    country_code: str = Field(..., description="ISO 3166-1 alpha-2 country code")
+
+    def to_destination_string(self) -> str:
+        """Convert to destination string format: provider:country:phone"""
+        return f"{self.provider.value}:{self.country_code}:{self.phone_number}"
+
+    @classmethod
+    def from_destination_string(cls, destination: str) -> "MobileMoneyDestination":
+        """Parse destination string back to MobileMoneyDestination"""
+        parts = destination.split(":")
+        if len(parts) != 3:
+            raise ValueError(f"Invalid mobile money destination format: {destination}")
+        return cls(
+            provider=parts[0],
+            country_code=parts[1],
+            phone_number=parts[2],
+        )

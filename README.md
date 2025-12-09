@@ -6,9 +6,12 @@ A production-ready Banking as a Service (BaaS) core banking system built on the 
 
 This project provides a complete banking infrastructure including:
 
+- **Multi-Tenancy**: Organizations and users with role-based access control
 - **Account Management**: Create and manage checking, savings, business, and escrow accounts
 - **Transaction Processing**: Handle deposits, withdrawals, and transfers with full audit trails
-- **Payment Rails**: ACH, wire transfers, and card payment processing
+- **Payment Rails**: ACH, wire transfers, card payment processing, and mobile money
+- **Mobile Money Support**: M-Pesa, MTN Mobile Money, Airtel Money, and other providers across Africa
+- **User Management**: Authentication, authorization, and team collaboration
 - **Customer Management**: KYC/AML compliance and customer lifecycle management
 - **Card Issuance**: Virtual and physical card management
 - **Real-time Ledger**: Double-entry bookkeeping via Formance Ledger
@@ -231,6 +234,20 @@ POST /api/v1/transactions/transfer
 }
 ```
 
+**Send mobile money payment**:
+```bash
+POST /api/v1/payments/mobile-money
+{
+  "from_account_id": "acc_123",
+  "phone_number": "+254712345678",
+  "provider": "mpesa",
+  "country_code": "KE",
+  "amount": 1000.00,
+  "currency": "KES",
+  "description": "Payment to merchant"
+}
+```
+
 ## Key Features
 
 ### 1. Async Architecture
@@ -257,6 +274,7 @@ Built with async/await for high concurrency:
 **Payment Service** ([core/services/payments.py](core/services/payments.py)):
 - ACH payments
 - Wire transfers
+- Mobile money transfers
 - Payment tracking
 - Payment cancellation
 
@@ -271,7 +289,46 @@ Built with async/await for high concurrency:
 - Spending limits
 - Card controls
 
-### 3. Robust Error Handling
+### 3. Mobile Money Integration
+
+Comprehensive support for mobile money providers across Africa and beyond:
+
+**Supported Providers**:
+- **M-Pesa**: Kenya, Tanzania, Mozambique, South Africa
+- **MTN Mobile Money**: Uganda, Ghana, Ivory Coast, Cameroon, Zambia, and more
+- **Airtel Money**: Kenya, Tanzania, Uganda, Zambia, Malawi, Nigeria, and more
+- **Orange Money**: Senegal, Mali, Burkina Faso, Ivory Coast, Cameroon
+- **Vodacom**: South Africa, Tanzania, Mozambique
+- **Tigo Pesa**: Tanzania, Rwanda, Ghana
+- **EcoCash**: Zimbabwe, Zambia
+- **Wave**: Senegal, Ivory Coast, Burkina Faso, Mali
+- **Chipper Cash**: Pan-African
+- **Flutterwave**: Pan-African aggregator
+
+**Features**:
+- E.164 phone number validation
+- Provider-country validation
+- Multi-currency support (KES, TZS, UGX, GHS, ZAR, XOF, XAF, etc.)
+- Structured metadata for tracking
+- Formance ledger integration ready
+
+**API Endpoint**: `POST /api/v1/payments/mobile-money`
+
+**Example**:
+```python
+# Send M-Pesa payment in Kenya
+payment = await payment_service.process_mobile_money_payment(
+    from_account_id="acc_123",
+    phone_number="+254712345678",
+    provider=MobileMoneyProvider.MPESA,
+    country_code="KE",
+    amount=Decimal("1000.00"),
+    currency="KES",
+    description="Payment to merchant"
+)
+```
+
+### 4. Robust Error Handling
 
 Custom exceptions for banking operations:
 - `InsufficientFundsError`
@@ -280,16 +337,18 @@ Custom exceptions for banking operations:
 - `TransactionLimitExceeded`
 - And more...
 
-### 4. Validation
+### 5. Validation
 
 Business rule validators:
 - Amount validation
 - Currency validation
 - Routing number verification
 - SWIFT code validation
+- E.164 phone number validation
+- Mobile money provider-country validation
 - Email and phone validation
 
-### 5. Observability
+### 6. Observability
 
 - Structured logging with `structlog`
 - Request/response logging
@@ -376,10 +435,15 @@ docker run -p 8000:8000 --env-file .env baas-core-banking
 - [ ] Audit trails
 
 ### Phase 5: Advanced Features
+- [x] Mobile money integration
+- [x] Organizations and users management
+- [x] Role-based access control (RBAC)
+- [x] Multi-tenancy support
 - [ ] Multi-currency accounts
 - [ ] FX trading
 - [ ] Recurring payments
-- [ ] Mobile wallet integration
+- [ ] Mobile money webhook handling
+- [ ] OAuth2/SSO integration
 
 ## Contributing
 
