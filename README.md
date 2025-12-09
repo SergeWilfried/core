@@ -494,6 +494,146 @@ else:
 
 **Documentation**: See [COMPLIANCE_ENGINE.md](docs/COMPLIANCE_ENGINE.md) for detailed integration guide.
 
+### 8. Regulatory Reporting ⭐
+
+**RegulatoryReportingService** ([core/services/regulatory.py](core/services/regulatory.py)):
+
+Automated regulatory reporting for SAR and CTR compliance:
+
+**Report Types:**
+- **CTR (Currency Transaction Report)** - FinCEN Form 112
+  - Automatic detection for transactions ≥ $10,000
+  - Daily aggregation of currency transactions
+  - Auto-generation with compliance officer review
+- **SAR (Suspicious Activity Report)** - FinCEN Form 111
+  - Based on compliance alerts and risk scores
+  - Manual preparation with detailed narratives
+  - Dual approval workflow for high-risk cases
+
+**Key Features:**
+- Automated CTR detection and generation
+- SAR flagging based on compliance triggers
+- Report lifecycle management (draft → review → approve → file)
+- Integration with FinCEN BSA E-Filing (optional)
+- Configurable thresholds and workflows
+- Background worker for continuous monitoring
+- Comprehensive audit trails
+
+**Configuration** ([core/models/regulatory.py](core/models/regulatory.py)):
+```python
+RegulatoryReportingConfig:
+  ctr_enabled: bool  # Enable CTR reporting
+  ctr_threshold: Decimal  # Threshold (default: $10,000)
+  ctr_auto_generate: bool  # Auto-generate CTRs
+  ctr_aggregation_window_hours: int  # Aggregation window
+
+  sar_enabled: bool  # Enable SAR reporting
+  sar_auto_generate: bool  # Auto-flag SARs
+  sar_risk_score_threshold: int  # Risk score trigger (default: 75)
+
+  require_dual_approval: bool  # Require two approvals
+  auto_file_reports: bool  # Auto-file approved reports
+  report_retention_days: int  # Retention period (default: 5 years)
+```
+
+**API Endpoints** ([core/api/v1/regulatory.py](core/api/v1/regulatory.py)):
+- `POST /api/v1/regulatory/ctr/check` - Check if CTR required
+- `POST /api/v1/regulatory/ctr` - Generate CTR
+- `POST /api/v1/regulatory/sar` - Generate SAR
+- `GET /api/v1/regulatory/reports` - List reports
+- `GET /api/v1/regulatory/reports/{id}` - Get report details
+- `POST /api/v1/regulatory/reports/{id}/review` - Review report
+- `POST /api/v1/regulatory/reports/{id}/file` - File with authorities
+- `GET /api/v1/regulatory/config` - Get configuration
+- `PUT /api/v1/regulatory/config` - Update configuration
+
+**Background Worker** ([core/workers/regulatory_reporting.py](core/workers/regulatory_reporting.py)):
+- Daily CTR generation for qualifying transactions
+- Continuous SAR flagging based on alerts
+- Notification to compliance officers
+- Report lifecycle monitoring and escalation
+
+**Suspicious Activity Types:**
+- Structuring (avoiding CTR reporting)
+- Money laundering
+- Terrorist financing
+- Fraud (check, card, wire, mortgage)
+- Identity theft
+- Elder financial abuse
+- Embezzlement
+- Ponzi schemes
+- And 10+ more classifications
+
+**Example Usage:**
+```python
+from core.services.regulatory import RegulatoryReportingService
+
+# Check if CTR required
+ctr_required = await regulatory_service.check_ctr_required(
+    organization_id="org_bank",
+    customer_id="cust_123",
+    transaction_date=datetime.utcnow(),
+    amount=Decimal("15000.00"),
+    currency="USD"
+)
+
+if ctr_required:
+    # Generate CTR
+    ctr = await regulatory_service.generate_ctr(
+        organization_id="org_bank",
+        customer_id="cust_123",
+        transaction_ids=["txn_1", "txn_2"],
+        prepared_by="user_compliance",
+        branch_id="branch_main"
+    )
+
+# Generate SAR for suspicious activity
+sar = await regulatory_service.generate_sar(
+    organization_id="org_bank",
+    customer_id="cust_456",
+    suspicious_activity_types=[SuspiciousActivityType.STRUCTURING],
+    narrative_summary="Customer conducted multiple transactions just below $10K threshold over 7 days, suggesting structuring behavior to avoid CTR reporting.",
+    transaction_ids=["txn_10", "txn_11", "txn_12"],
+    prepared_by="user_compliance",
+    activity_start_date=datetime.utcnow() - timedelta(days=7),
+    priority=ReportPriority.HIGH
+)
+
+# Review and approve report
+await regulatory_service.review_report(
+    report_id=ctr.id,
+    report_type=ReportType.CTR,
+    reviewed_by="user_manager",
+    approved=True
+)
+
+# File with authorities
+bsa_id = await regulatory_service.file_report(
+    report_id=ctr.id,
+    report_type=ReportType.CTR,
+    filed_by="user_compliance"
+)
+```
+
+**Integration with Compliance:**
+```python
+# Check if regulatory reporting required
+reporting = await compliance_service.check_regulatory_reporting_required(
+    organization_id="org_bank",
+    compliance_check=compliance_check,
+    transaction_amount=Decimal("15000.00"),
+    transaction_date=datetime.utcnow()
+)
+
+if reporting["ctr_required"]:
+    logger.info("CTR generation required")
+
+if reporting["sar_required"]:
+    logger.warning("SAR review required")
+```
+
+**Documentation**: See [REGULATORY_REPORTING.md](docs/REGULATORY_REPORTING.md) for comprehensive guide.
+
 ## Development
 
 ### Code Quality
@@ -579,7 +719,8 @@ docker run -p 8000:8000 --env-file .env baas-core-banking
 - [x] RBAC compliance permissions
 - [x] Compliance API endpoints
 - [x] Background reconciliation worker
-- [ ] Automated regulatory reporting (SAR, CTR)
+- [x] Automated regulatory reporting (SAR, CTR)
+- [ ] FinCEN BSA E-Filing integration
 - [ ] PEP screening integration
 - [ ] ML-based anomaly detection
 

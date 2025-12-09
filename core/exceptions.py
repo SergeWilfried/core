@@ -225,3 +225,26 @@ class ExternalServiceError(BankingException):
         super().__init__(
             f"{service_name}: {message}", code="EXTERNAL_SERVICE_ERROR"
         )
+
+
+# Compliance exceptions
+class ComplianceError(BankingException):
+    """Compliance error"""
+
+    def __init__(self, message: str):
+        super().__init__(message, code="COMPLIANCE_ERROR")
+
+
+class TransactionBlockedError(ComplianceError):
+    """Transaction blocked by compliance"""
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+# Regulatory reporting exceptions
+class RegulatoryReportError(BankingException):
+    """Regulatory reporting error"""
+
+    def __init__(self, message: str):
+        super().__init__(message, code="REGULATORY_REPORT_ERROR")

@@ -602,3 +602,75 @@ class ComplianceService:
         # TODO: Update in database
         logger.info(f"Compliance check {check_id} rejected by {reviewed_by}")
         raise NotImplementedError("Manual review rejection not yet implemented")
+
+    async def check_regulatory_reporting_required(
+        self,
+        organization_id: str,
+        compliance_check: ComplianceCheck,
+        transaction_amount: Decimal,
+        transaction_date: datetime,
+        alert: Optional[ComplianceAlert] = None,
+    ) -> dict:
+        """
+        Check if regulatory reporting is required
+
+        Returns dict with:
+        - ctr_required: bool
+        - sar_required: bool
+        - reasons: list[str]
+
+        Args:
+            organization_id: Organization ID
+            compliance_check: Compliance check result
+            transaction_amount: Transaction amount
+            transaction_date: Transaction date
+            alert: Optional compliance alert
+
+        Returns:
+            Dict with CTR and SAR requirements
+        """
+        from .regulatory import RegulatoryReportingService
+
+        regulatory_service = RegulatoryReportingService(self.repository)
+
+        result = {
+            "ctr_required": False,
+            "sar_required": False,
+            "reasons": [],
+        }
+
+        # Check CTR requirement
+        if compliance_check.customer_id:
+            ctr_required = await regulatory_service.check_ctr_required(
+                organization_id=organization_id,
+                customer_id=compliance_check.customer_id,
+                transaction_date=transaction_date,
+                amount=transaction_amount,
+            )
+
+            if ctr_required:
+                result["ctr_required"] = True
+                result["reasons"].append(
+                    f"Currency transaction exceeds reporting threshold"
+                )
+
+        # Check SAR requirement
+        sar_required = await regulatory_service.check_sar_required(
+            organization_id=organization_id,
+            compliance_check=compliance_check,
+            alert=alert,
+        )
+
+        if sar_required:
+            result["sar_required"] = True
+            result["reasons"].append(
+                "Suspicious activity detected - SAR filing may be required"
+            )
+
+        if result["ctr_required"] or result["sar_required"]:
+            logger.warning(
+                f"Regulatory reporting required for compliance check {compliance_check.id}: "
+                f"CTR={result['ctr_required']}, SAR={result['sar_required']}"
+            )
+
+        return result

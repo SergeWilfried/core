@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from ..config import get_settings
-from .v1 import accounts, transactions, customers, payments
+from .v1 import accounts, transactions, customers, payments, compliance, regulatory
 
 
 def create_app() -> FastAPI:
@@ -36,6 +36,8 @@ def create_app() -> FastAPI:
     app.include_router(transactions.router, prefix="/api/v1")
     app.include_router(customers.router, prefix="/api/v1")
     app.include_router(payments.router, prefix="/api/v1")
+    app.include_router(compliance.router, prefix="/api/v1")
+    app.include_router(regulatory.router, prefix="/api/v1")
 
     @app.get("/")
     async def root():
