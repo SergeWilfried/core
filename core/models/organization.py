@@ -32,6 +32,7 @@ class OrganizationStatus(str, Enum):
 class OrganizationSettings(BaseModel):
     """Organization settings and preferences"""
 
+    # Payment settings
     allow_mobile_money: bool = Field(default=True, description="Enable mobile money")
     allow_international: bool = Field(default=False, description="Enable international payments")
     require_2fa: bool = Field(default=False, description="Require 2FA for all users")
@@ -43,6 +44,46 @@ class OrganizationSettings(BaseModel):
     )
     webhook_url: Optional[str] = Field(default=None, description="Webhook URL for events")
     api_callback_url: Optional[str] = Field(default=None, description="API callback URL")
+
+    # Compliance settings
+    compliance_level: str = Field(
+        default="standard",
+        description="Compliance level: basic, standard, strict"
+    )
+    enable_sanctions_screening: bool = Field(
+        default=True,
+        description="Enable sanctions screening (OFAC, UN, EU)"
+    )
+    enable_velocity_monitoring: bool = Field(
+        default=True,
+        description="Enable velocity/pattern monitoring"
+    )
+    enable_pep_screening: bool = Field(
+        default=False,
+        description="Enable PEP (Politically Exposed Person) screening"
+    )
+    max_transaction_amount: Optional[float] = Field(
+        default=None,
+        description="Maximum transaction amount (hard limit)"
+    )
+    restricted_countries: list[str] = Field(
+        default_factory=list,
+        description="ISO country codes blocked for this organization"
+    )
+    require_manual_review_above: Optional[float] = Field(
+        default=None,
+        description="Amount threshold requiring manual review"
+    )
+    auto_block_high_risk: bool = Field(
+        default=True,
+        description="Automatically block transactions with high risk scores"
+    )
+    risk_score_threshold: int = Field(
+        default=75,
+        ge=0,
+        le=100,
+        description="Risk score threshold for blocking/review (0-100)"
+    )
 
 
 class Organization(BaseModel):

@@ -37,6 +37,13 @@ class Transaction(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: str = Field(..., description="Transaction identifier")
+    organization_id: str = Field(..., description="Organization identifier")
+    branch_id: Optional[str] = Field(
+        None, description="Branch that processed transaction (nullable for backward compatibility)"
+    )
+    processed_by_user_id: Optional[str] = Field(
+        None, description="User ID who processed the transaction"
+    )
     transaction_type: TransactionType = Field(..., description="Transaction type")
     from_account_id: Optional[str] = Field(
         default=None, description="Source account"

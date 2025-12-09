@@ -7,6 +7,7 @@ A production-ready Banking as a Service (BaaS) core banking system built on the 
 This project provides a complete banking infrastructure including:
 
 - **Multi-Tenancy**: Organizations and users with role-based access control
+- **Multi-Branch Support**: Hierarchical branch structure for organizations with multiple locations
 - **Account Management**: Create and manage checking, savings, business, and escrow accounts
 - **Transaction Processing**: Handle deposits, withdrawals, and transfers with full audit trails
 - **Payment Rails**: ACH, wire transfers, card payment processing, and mobile money
@@ -15,6 +16,7 @@ This project provides a complete banking infrastructure including:
 - **Customer Management**: KYC/AML compliance and customer lifecycle management
 - **Card Issuance**: Virtual and physical card management
 - **Real-time Ledger**: Double-entry bookkeeping via Formance Ledger
+- **Compliance Engine**: Automated KYC/AML, sanctions screening, transaction monitoring, and risk scoring
 
 ## Architecture
 
@@ -44,6 +46,7 @@ core/
 │   │   ├── payments.py
 │   │   ├── customers.py
 │   │   ├── cards.py
+│   │   ├── compliance.py      # NEW: Compliance engine
 │   │   └── ledger.py
 │   │
 │   ├── models/                # Domain models (Pydantic)
@@ -51,7 +54,9 @@ core/
 │   │   ├── transaction.py
 │   │   ├── customer.py
 │   │   ├── payment.py
-│   │   └── card.py
+│   │   ├── card.py
+│   │   ├── compliance.py      # NEW: Compliance models
+│   │   └── rules.py           # NEW: Rule engine models
 │   │
 │   ├── api/                   # FastAPI routes
 │   │   ├── app.py
@@ -60,15 +65,22 @@ core/
 │   │       ├── accounts.py
 │   │       ├── transactions.py
 │   │       ├── payments.py
-│   │       └── customers.py
+│   │       ├── customers.py
+│   │       ├── organizations.py
+│   │       ├── users.py
+│   │       └── compliance.py  # NEW: Compliance API
 │   │
 │   ├── repositories/          # Data access layer
 │   │   └── formance.py
 │   │
+│   ├── workers/               # NEW: Background workers
+│   │   └── compliance_reconciliation.py
+│   │
 │   └── utils/
 │       ├── logging.py
 │       ├── retry.py
-│       └── validators.py
+│       ├── validators.py
+│       └── sanctions.py       # NEW: Sanctions screening
 │
 ├── tests/                     # Test suite
 │   ├── unit/
@@ -355,6 +367,133 @@ Business rule validators:
 - Error tracking
 - Health check endpoint
 
+### 7. Compliance Engine ⭐
+
+**ComplianceService** ([core/services/compliance.py](core/services/compliance.py)):
+
+Comprehensive compliance engine for KYC/AML and transaction monitoring:
+
+**Pre-Transaction Checks:**
+- KYC/KYB verification status validation
+- Sanctions screening (OFAC, UN, EU lists)
+- Organization compliance settings validation
+- Transaction velocity monitoring
+- Geographic risk assessment
+- Custom compliance rules evaluation
+- Real-time risk scoring (0-100)
+
+**Sanctions Screening** ([core/utils/sanctions.py](core/utils/sanctions.py)):
+- Name matching against OFAC, UN, EU sanctions lists
+- Fuzzy matching for name variations
+- Alias checking
+- Country-level sanctions validation
+- Country risk scoring (FATF-aligned)
+
+**Configurable Rules Engine** ([core/models/rules.py](core/models/rules.py)):
+- Custom compliance rules per organization
+- Pre-built rule templates (high value, blocked countries, velocity, KYC)
+- Flexible condition operators (equals, greater than, in, contains, regex)
+- Actions: ALLOW, BLOCK, REVIEW, ALERT, LOG
+- Priority-based evaluation
+- Risk score impact weighting
+
+**Organization Compliance Settings**:
+```python
+OrganizationSettings:
+  compliance_level: "basic" | "standard" | "strict"
+  enable_sanctions_screening: bool
+  enable_velocity_monitoring: bool
+  enable_pep_screening: bool
+  max_transaction_amount: Optional[Decimal]
+  restricted_countries: list[str]
+  require_manual_review_above: Optional[Decimal]
+  risk_score_threshold: int (0-100)
+```
+
+**Risk Scoring Components** (weighted):
+- KYC Score (25%): Verification status
+- Sanctions Score (30%): Screening match confidence
+- Transaction Score (20%): Amount-based risk
+- Geographic Score (15%): Country risk assessment
+- Velocity Score (10%): Pattern analysis
+
+**Audit Trail Integration**:
+All approved transactions are posted to Formance ledger with comprehensive compliance metadata:
+```
+Metadata:
+  - compliance_check_id
+  - compliance_status: approved/blocked/review
+  - risk_score: 0-100
+  - risk_level: low/medium/high/critical
+  - rules_evaluated: [...]
+  - organization_id, customer_id
+```
+
+**API Endpoints** ([core/api/v1/compliance.py](core/api/v1/compliance.py)):
+- `POST /api/v1/compliance/check` - Run compliance check
+- `GET /api/v1/compliance/checks/{id}` - Get check details
+- `POST /api/v1/compliance/checks/{id}/approve` - Approve review
+- `POST /api/v1/compliance/checks/{id}/reject` - Reject transaction
+- `POST /api/v1/compliance/rules` - Create compliance rule
+- `GET /api/v1/compliance/rules` - List rules
+- `GET /api/v1/compliance/sanctions/screen` - Screen name
+- `GET /api/v1/compliance/country-risk/{code}` - Get country risk
+
+**Background Workers** ([core/workers/compliance_reconciliation.py](core/workers/compliance_reconciliation.py)):
+- Async reconciliation with Formance ledger
+- Deep AML analysis
+- Risk score updates
+- Compliance alert generation
+- Regulatory report preparation
+
+**RBAC Permissions**:
+- `COMPLIANCE_VIEW` - View compliance checks
+- `COMPLIANCE_APPROVE` - Approve manual reviews
+- `COMPLIANCE_REJECT` - Reject transactions
+- `COMPLIANCE_RULES_MANAGE` - Manage rules
+- `COMPLIANCE_OVERRIDE` - Override blocks
+- `COMPLIANCE_REPORTS` - Generate reports
+
+**Example Integration**:
+```python
+from core.services.compliance import ComplianceService
+
+# Run compliance check before payment
+compliance_check = await compliance_service.check_transaction(
+    organization_id="org_acme",
+    customer_id="cust_john",
+    account_id="acc_123",
+    amount=Decimal("5000.00"),
+    currency="USD",
+    transaction_type="mobile_money_payment",
+    payment_method=PaymentMethod.MOBILE_MONEY,
+    destination_country="KE",
+)
+
+if compliance_check.is_approved():
+    # Process payment
+    payment = await payment_service.create_payment(...)
+
+    # Post to Formance ledger with compliance metadata
+    await formance_repo.post_transaction(
+        ledger_id=f"org_{organization_id}",
+        postings=[...],
+        metadata={
+            "compliance_check_id": compliance_check.id,
+            "risk_score": compliance_check.risk_score,
+            ...
+        }
+    )
+elif compliance_check.needs_review():
+    # Queue for manual review
+    pass
+else:
+    # Transaction blocked
+    raise TransactionBlockedError(compliance_check.reason)
+```
+
+**Documentation**: See [COMPLIANCE_ENGINE.md](docs/COMPLIANCE_ENGINE.md) for detailed integration guide.
+
 ## Development
 
 ### Code Quality
@@ -428,11 +567,21 @@ docker run -p 8000:8000 --env-file .env baas-core-banking
 - [ ] Card controls
 - [ ] 3DS authentication
 
-### Phase 4: Compliance
-- [ ] KYC/AML automation
-- [ ] Transaction monitoring
-- [ ] Regulatory reporting
-- [ ] Audit trails
+### Phase 4: Compliance ✓
+- [x] KYC/AML automation
+- [x] Transaction monitoring with risk scoring
+- [x] Sanctions screening (OFAC, UN, EU)
+- [x] Configurable compliance rules engine
+- [x] Geographic risk assessment
+- [x] Velocity/pattern monitoring
+- [x] Formance ledger audit trails
+- [x] Organization-level compliance policies
+- [x] RBAC compliance permissions
+- [x] Compliance API endpoints
+- [x] Background reconciliation worker
+- [ ] Automated regulatory reporting (SAR, CTR)
+- [ ] PEP screening integration
+- [ ] ML-based anomaly detection
 
 ### Phase 5: Advanced Features
 - [x] Mobile money integration

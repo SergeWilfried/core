@@ -43,6 +43,10 @@ class Customer(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: str = Field(..., description="Customer identifier")
+    organization_id: str = Field(..., description="Organization identifier")
+    branch_id: Optional[str] = Field(
+        None, description="Branch where customer was registered (nullable for backward compatibility)"
+    )
     email: EmailStr = Field(..., description="Customer email")
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")

@@ -80,6 +80,14 @@ class Permission(str, Enum):
     # Audit permissions
     AUDIT_READ = "audit:read"
 
+    # Compliance permissions
+    COMPLIANCE_VIEW = "compliance:view"
+    COMPLIANCE_APPROVE = "compliance:approve"
+    COMPLIANCE_REJECT = "compliance:reject"
+    COMPLIANCE_RULES_MANAGE = "compliance:rules:manage"
+    COMPLIANCE_OVERRIDE = "compliance:override"
+    COMPLIANCE_REPORTS = "compliance:reports"
+
 
 # Role-based permission mapping
 ROLE_PERMISSIONS: dict[UserRole, list[Permission]] = {
@@ -114,6 +122,12 @@ ROLE_PERMISSIONS: dict[UserRole, list[Permission]] = {
         Permission.REPORTS_VIEW,
         Permission.REPORTS_EXPORT,
         Permission.AUDIT_READ,
+        Permission.COMPLIANCE_VIEW,
+        Permission.COMPLIANCE_APPROVE,
+        Permission.COMPLIANCE_REJECT,
+        Permission.COMPLIANCE_RULES_MANAGE,
+        Permission.COMPLIANCE_OVERRIDE,
+        Permission.COMPLIANCE_REPORTS,
     ],
     UserRole.ORG_ADMIN: [
         # Most permissions except org settings and user deletion
@@ -139,6 +153,10 @@ ROLE_PERMISSIONS: dict[UserRole, list[Permission]] = {
         Permission.REPORTS_VIEW,
         Permission.REPORTS_EXPORT,
         Permission.AUDIT_READ,
+        Permission.COMPLIANCE_VIEW,
+        Permission.COMPLIANCE_APPROVE,
+        Permission.COMPLIANCE_REJECT,
+        Permission.COMPLIANCE_REPORTS,
     ],
     UserRole.FINANCE_MANAGER: [
         # Financial operations
@@ -154,6 +172,9 @@ ROLE_PERMISSIONS: dict[UserRole, list[Permission]] = {
         Permission.CUSTOMERS_READ,
         Permission.REPORTS_VIEW,
         Permission.REPORTS_EXPORT,
+        Permission.COMPLIANCE_VIEW,
+        Permission.COMPLIANCE_APPROVE,
+        Permission.COMPLIANCE_REPORTS,
     ],
     UserRole.ACCOUNTANT: [
         # Read and limited write
@@ -222,6 +243,15 @@ class User(BaseModel):
         default_factory=list, description="Additional custom permissions"
     )
 
+    # Branch access (NEW for multi-branch support)
+    primary_branch_id: Optional[str] = Field(
+        None, description="User's primary branch (None for org-wide users)"
+    )
+    accessible_branches: list[str] = Field(
+        default_factory=list,
+        description="Branches user can access (empty list = all branches)"
+    )
+
     # Status
     status: UserStatus = Field(default=UserStatus.PENDING, description="User status")
     last_login_at: Optional[datetime] = Field(
@@ -276,6 +306,27 @@ class User(BaseModel):
     def has_permission(self, permission: Permission) -> bool:
         """Check if user has a specific permission"""
         return permission in self.get_all_permissions()
+
+    def has_branch_access(self, branch_id: str) -> bool:
+        """
+        Check if user can access a specific branch
+
+        Args:
+            branch_id: Branch identifier to check
+
+        Returns:
+            True if user can access the branch
+        """
+        # Organization-wide users (empty accessible_branches) can access all
+        if not self.accessible_branches:
+            return True
+
+        # Check if branch in user's accessible list
+        return branch_id in self.accessible_branches
+
+    def can_access_all_branches(self) -> bool:
+        """Check if user has organization-wide access"""
+        return not self.accessible_branches
 
     def has_any_permission(self, permissions: list[Permission]) -> bool:
         """Check if user has any of the specified permissions"""

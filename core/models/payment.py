@@ -53,6 +53,10 @@ class Payment(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: str = Field(..., description="Payment identifier")
+    organization_id: str = Field(..., description="Organization identifier")
+    branch_id: Optional[str] = Field(
+        None, description="Branch that initiated payment (nullable for backward compatibility)"
+    )
     from_account_id: str = Field(..., description="Source account")
     amount: Decimal = Field(..., description="Payment amount")
     currency: str = Field(default="USD", description="Payment currency")
