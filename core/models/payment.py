@@ -54,9 +54,7 @@ class Payment(BaseModel):
 
     id: str = Field(..., description="Payment identifier")
     organization_id: str = Field(..., description="Organization identifier")
-    branch_id: Optional[str] = Field(
-        None, description="Branch that initiated payment (nullable for backward compatibility)"
-    )
+    branch_id: str = Field(..., description="Branch that initiated payment")
     from_account_id: str = Field(..., description="Source account")
     amount: Decimal = Field(..., description="Payment amount")
     currency: str = Field(default="USD", description="Payment currency")

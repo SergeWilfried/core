@@ -38,9 +38,7 @@ class Transaction(BaseModel):
 
     id: str = Field(..., description="Transaction identifier")
     organization_id: str = Field(..., description="Organization identifier")
-    branch_id: Optional[str] = Field(
-        None, description="Branch that processed transaction (nullable for backward compatibility)"
-    )
+    branch_id: str = Field(..., description="Branch that processed transaction")
     processed_by_user_id: Optional[str] = Field(
         None, description="User ID who processed the transaction"
     )

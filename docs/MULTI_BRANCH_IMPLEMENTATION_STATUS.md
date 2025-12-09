@@ -10,7 +10,7 @@ class Account(BaseModel):
     id: str
     customer_id: str
     organization_id: str  # Added
-    branch_id: Optional[str] = None  # Added (nullable for backward compatibility)
+    branch_id: str  # Required - branch where account was opened
     account_type: AccountType
     # ... rest of fields
 ```
@@ -20,7 +20,7 @@ class Account(BaseModel):
 class Customer(BaseModel):
     id: str
     organization_id: str  # Added
-    branch_id: Optional[str] = None  # Added (nullable for backward compatibility)
+    branch_id: str  # Required - branch where customer was registered
     email: EmailStr
     # ... rest of fields
 ```
@@ -30,7 +30,7 @@ class Customer(BaseModel):
 class Transaction(BaseModel):
     id: str
     organization_id: str  # Added
-    branch_id: Optional[str] = None  # Added (nullable for backward compatibility)
+    branch_id: str  # Required - branch that processed transaction
     processed_by_user_id: Optional[str] = None  # Added
     transaction_type: TransactionType
     # ... rest of fields
@@ -41,7 +41,7 @@ class Transaction(BaseModel):
 class Payment(BaseModel):
     id: str
     organization_id: str  # Added
-    branch_id: Optional[str] = None  # Added (nullable for backward compatibility)
+    branch_id: str  # Required - branch that initiated payment
     from_account_id: str
     # ... rest of fields
 ```
@@ -77,6 +77,15 @@ class User(BaseModel):
 - ✅ `BranchAssignment` - User/resource assignments to branches
 - ✅ `BranchPerformanceMetrics` - Branch performance tracking
 - ✅ Methods: `get_effective_transaction_limit()`, `get_effective_compliance_level()`
+
+### 2.1. Auto-Creation of HQ Branch
+
+**OrganizationService Enhanced** ([core/services/organizations.py](core/services/organizations.py:95-114))
+- ✅ Automatically creates headquarters branch when organization is created
+- ✅ HQ branch inherits organization's address and contact details
+- ✅ Branch code is set to "HQ"
+- ✅ Metadata includes `auto_created: true` flag
+- ✅ Ensures every organization has at least one branch from creation
 
 ### 3. Branch Service Created
 
@@ -419,23 +428,25 @@ Add multi-branch section to [README.md](README.md)
 ### Step 1: Enable Multi-Branch (Database)
 
 1. Run database migrations to create `branches` table and add foreign keys
-2. Existing data continues to work (branch_id is nullable)
+2. Note: `branch_id` is **required** in all models - every record must belong to a branch
 
-### Step 2: Create Headquarters Branch
+### Step 2: Create Organization (HQ Branch Auto-Created)
 
 ```python
-from core.services.branches import BranchService
-from core.models.branch import BranchType
+from core.services.organizations import OrganizationService
+from core.models.organization import OrganizationType
 
-# Create HQ branch for existing organization
-branch = await branch_service.create_branch(
-    organization_id="org_acme_bank",
-    name="Headquarters",
-    code="HQ",
-    branch_type=BranchType.HEADQUARTERS,
+# Create organization - HQ branch is automatically created
+organization = await org_service.create_organization(
+    name="Acme Bank",
+    organization_type=OrganizationType.FINANCIAL_INSTITUTION,
+    email="contact@acmebank.com",
     address_country="US",
     address_city="San Francisco",
 )
+
+# HQ branch is now available with code "HQ"
+# You can retrieve it via branch service
 ```
 
 ### Step 3: Assign Users to Branches
@@ -497,33 +508,31 @@ transaction = await transaction_service.create_transaction(
 
 ---
 
-## 📊 Migration Path
+## 📊 Implementation Approach
 
-### Phase 1: Backward Compatible (Current State)
-- ✅ All models have `branch_id` as Optional
-- ✅ Existing data works without branches
-- ✅ New data can optionally specify branches
+### ✅ Current State: Required from Day One
+- ✅ All models have `branch_id` as **required** (not optional)
+- ✅ Every organization automatically gets an HQ branch on creation
+- ✅ All accounts, customers, transactions, and payments must specify a branch
+- ✅ No backward compatibility concerns (pre-production system)
 
-### Phase 2: Gradual Adoption
-- Create branches for organizations that need them
-- Assign users to branches
-- Start creating new accounts/customers with branch_id
-
-### Phase 3: Full Enforcement (Future)
-- Make `branch_id` required for new records
-- Implement branch access control in all endpoints
-- Enable branch-level reporting
+### Next Steps
+- ⏳ Implement repository methods (database storage)
+- ⏳ Create Branch API endpoints
+- ⏳ Add branch access control middleware
+- ⏳ Implement branch-level reporting
 
 ---
 
 ## 🎉 Summary
 
 **What's Ready:**
-- ✅ All domain models updated with branch support
+- ✅ All domain models updated with **required** branch support
 - ✅ Branch model with full hierarchy and settings
 - ✅ User model with branch access control methods
 - ✅ BranchService with complete business logic
-- ✅ Backward compatibility (branch_id nullable)
+- ✅ OrganizationService auto-creates HQ branch on org creation
+- ✅ No backward compatibility needed (pre-production)
 - ✅ Documentation complete
 
 **What's Next:**

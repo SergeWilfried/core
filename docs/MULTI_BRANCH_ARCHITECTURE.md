@@ -40,7 +40,7 @@ Platform
 
 ### 1. Add Branch Foreign Keys
 
-Update existing models to include `branch_id`:
+All core models include **required** `branch_id` fields:
 
 ```python
 # core/models/account.py
@@ -48,22 +48,29 @@ class Account(BaseModel):
     id: str
     customer_id: str
     organization_id: str
-    branch_id: Optional[str] = None  # NEW: Branch where account opened
+    branch_id: str  # REQUIRED: Branch where account opened
     # ... rest of fields
 
 # core/models/customer.py
 class Customer(BaseModel):
     id: str
     organization_id: str
-    branch_id: Optional[str] = None  # NEW: Branch where customer registered
+    branch_id: str  # REQUIRED: Branch where customer registered
     # ... rest of fields
 
 # core/models/transaction.py
 class Transaction(BaseModel):
     id: str
     organization_id: str
-    branch_id: Optional[str] = None  # NEW: Branch that processed transaction
+    branch_id: str  # REQUIRED: Branch that processed transaction
     processed_by_user_id: Optional[str] = None  # NEW: Staff who processed
+    # ... rest of fields
+
+# core/models/payment.py
+class Payment(BaseModel):
+    id: str
+    organization_id: str
+    branch_id: str  # REQUIRED: Branch that initiated payment
     # ... rest of fields
 
 # core/models/user.py
@@ -71,9 +78,11 @@ class User(BaseModel):
     id: str
     organization_id: str
     primary_branch_id: Optional[str] = None  # NEW: User's primary branch
-    accessible_branches: list[str] = []  # NEW: Branches user can access
+    accessible_branches: list[str] = []  # NEW: Branches user can access (empty = all)
     # ... rest of fields
 ```
+
+**Note:** Since the system is pre-production, all `branch_id` fields are required from day one. Every organization automatically gets an HQ branch on creation.
 
 ### 2. Branch Model
 

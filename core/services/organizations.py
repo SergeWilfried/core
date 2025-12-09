@@ -11,6 +11,7 @@ from ..models.organization import (
     OrganizationStatus,
     OrganizationSettings,
 )
+from ..models.branch import BranchType, Branch
 from ..repositories.formance import FormanceRepository
 from ..exceptions import ValidationError
 
@@ -90,6 +91,28 @@ class OrganizationService:
 
         organization = Organization(**org_data)
         logger.info(f"Organization created: {organization.id}")
+
+        # Auto-create headquarters branch
+        from .branches import BranchService
+        branch_service = BranchService(self.formance_repo)
+
+        hq_branch = await branch_service.create_branch(
+            organization_id=organization.id,
+            name=f"{name} - Headquarters",
+            code="HQ",
+            branch_type=BranchType.HEADQUARTERS,
+            address_country=address_country,
+            address_street=address_street,
+            address_city=address_city,
+            address_state=address_state,
+            address_postal_code=address_postal_code,
+            email=email,
+            phone=phone,
+            metadata={"auto_created": True, "created_with_organization": True},
+        )
+
+        logger.info(f"Auto-created HQ branch {hq_branch.id} for organization {organization.id}")
+
         return organization
 
     async def get_organization(self, organization_id: str) -> Organization:
