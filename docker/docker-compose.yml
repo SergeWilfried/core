@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: baas-core-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql://banking:banking@postgres:5432/banking
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: baas-postgres
+    environment:
+      - POSTGRES_USER=banking
+      - POSTGRES_PASSWORD=banking
+      - POSTGRES_DB=banking
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - banking-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: baas-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - banking-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  banking-network:
+    driver: bridge
