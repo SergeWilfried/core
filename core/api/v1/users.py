@@ -2,14 +2,14 @@
 User management API endpoints
 """
 
-from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, Field, EmailStr
+from typing import Annotated
 
-from ...models.user import User, UserRole, UserStatus, Permission
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, EmailStr, Field
+
+from ...models.user import Permission, UserRole, UserStatus
 from ...services.users import UserService
-from ..dependencies import get_user_service, get_current_user
-
+from ..dependencies import get_current_user, get_user_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -21,8 +21,8 @@ class CreateUserRequest(BaseModel):
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")
     role: UserRole = Field(..., description="User role")
-    password: Optional[str] = Field(default=None, description="User password")
-    phone: Optional[str] = Field(default=None, description="Phone number")
+    password: str | None = Field(default=None, description="User password")
+    phone: str | None = Field(default=None, description="Phone number")
     permissions: list[Permission] = Field(
         default_factory=list, description="Additional permissions"
     )
@@ -30,14 +30,12 @@ class CreateUserRequest(BaseModel):
 
 
 class UpdateUserRequest(BaseModel):
-    first_name: Optional[str] = Field(default=None, description="First name")
-    last_name: Optional[str] = Field(default=None, description="Last name")
-    phone: Optional[str] = Field(default=None, description="Phone number")
-    role: Optional[UserRole] = Field(default=None, description="User role")
-    permissions: Optional[list[Permission]] = Field(
-        default=None, description="Additional permissions"
-    )
-    metadata: Optional[dict] = Field(default=None, description="Additional metadata")
+    first_name: str | None = Field(default=None, description="First name")
+    last_name: str | None = Field(default=None, description="Last name")
+    phone: str | None = Field(default=None, description="Phone number")
+    role: UserRole | None = Field(default=None, description="User role")
+    permissions: list[Permission] | None = Field(default=None, description="Additional permissions")
+    metadata: dict | None = Field(default=None, description="Additional metadata")
 
 
 class ChangePasswordRequest(BaseModel):
@@ -52,9 +50,7 @@ class ResetPasswordRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr = Field(..., description="User email")
     password: str = Field(..., description="User password")
-    organization_id: Optional[str] = Field(
-        default=None, description="Organization ID (optional)"
-    )
+    organization_id: str | None = Field(default=None, description="Organization ID (optional)")
 
 
 class UserResponse(BaseModel):
@@ -63,7 +59,7 @@ class UserResponse(BaseModel):
     email: str
     first_name: str
     last_name: str
-    phone: Optional[str]
+    phone: str | None
     role: UserRole
     permissions: list[Permission]
     status: UserStatus
@@ -170,12 +166,12 @@ async def get_user(
 @router.get("/organization/{organization_id}", response_model=list[UserResponse])
 async def list_organization_users(
     organization_id: str,
-    limit: int = Query(default=50, le=100),
-    offset: int = Query(default=0, ge=0),
-    user_status: Optional[UserStatus] = Query(default=None, alias="status"),
-    user_role: Optional[UserRole] = Query(default=None, alias="role"),
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
+    limit: int = Query(default=50, le=100),
+    offset: int = Query(default=0, ge=0),
+    user_status: UserStatus | None = Query(default=None, alias="status"),
+    user_role: UserRole | None = Query(default=None, alias="role"),
 ):
     """List users in an organization"""
     try:

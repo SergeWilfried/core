@@ -2,16 +2,16 @@
 Account API endpoints
 """
 
-from typing import Annotated
 from decimal import Decimal
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from ...models.account import Account, AccountType, AccountStatus
-from ...services import AccountService
 from ...exceptions import AccountNotFoundError, InsufficientFundsError
+from ...models.account import AccountStatus, AccountType
+from ...services import AccountService
 from ..dependencies import get_account_service, get_current_user
-
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -125,9 +125,9 @@ async def list_customer_accounts(
 @router.post("/{account_id}/freeze", response_model=AccountResponse)
 async def freeze_account(
     account_id: str,
-    reason: str = "Customer request",
     service: Annotated[AccountService, Depends(get_account_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
+    reason: str = "Customer request",
 ):
     """Freeze an account"""
     try:

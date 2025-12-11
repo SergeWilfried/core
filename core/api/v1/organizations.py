@@ -2,19 +2,18 @@
 Organization API endpoints
 """
 
-from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, Field, EmailStr
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, EmailStr, Field
 
 from ...models.organization import (
-    Organization,
-    OrganizationType,
-    OrganizationStatus,
     OrganizationSettings,
+    OrganizationStatus,
+    OrganizationType,
 )
 from ...services.organizations import OrganizationService
-from ..dependencies import get_organization_service, get_current_user
-
+from ..dependencies import get_current_user, get_organization_service
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
@@ -22,70 +21,62 @@ router = APIRouter(prefix="/organizations", tags=["organizations"])
 # Request/Response schemas
 class CreateOrganizationRequest(BaseModel):
     name: str = Field(..., description="Organization name")
-    legal_name: Optional[str] = Field(default=None, description="Legal business name")
+    legal_name: str | None = Field(default=None, description="Legal business name")
     organization_type: OrganizationType = Field(..., description="Organization type")
     email: EmailStr = Field(..., description="Contact email")
-    phone: Optional[str] = Field(default=None, description="Contact phone")
-    website: Optional[str] = Field(default=None, description="Website URL")
-    address_street: Optional[str] = Field(default=None, description="Street address")
-    address_city: Optional[str] = Field(default=None, description="City")
-    address_state: Optional[str] = Field(default=None, description="State/Province")
-    address_postal_code: Optional[str] = Field(default=None, description="Postal code")
+    phone: str | None = Field(default=None, description="Contact phone")
+    website: str | None = Field(default=None, description="Website URL")
+    address_street: str | None = Field(default=None, description="Street address")
+    address_city: str | None = Field(default=None, description="City")
+    address_state: str | None = Field(default=None, description="State/Province")
+    address_postal_code: str | None = Field(default=None, description="Postal code")
     address_country: str = Field(..., description="Country code (ISO 3166-1 alpha-2)")
-    tax_id: Optional[str] = Field(default=None, description="Tax ID")
-    registration_number: Optional[str] = Field(
-        default=None, description="Registration number"
-    )
-    settings: Optional[OrganizationSettings] = Field(
-        default=None, description="Organization settings"
-    )
+    tax_id: str | None = Field(default=None, description="Tax ID")
+    registration_number: str | None = Field(default=None, description="Registration number")
+    settings: OrganizationSettings | None = Field(default=None, description="Organization settings")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
 
 class UpdateOrganizationRequest(BaseModel):
-    name: Optional[str] = Field(default=None, description="Organization name")
-    legal_name: Optional[str] = Field(default=None, description="Legal business name")
-    email: Optional[EmailStr] = Field(default=None, description="Contact email")
-    phone: Optional[str] = Field(default=None, description="Contact phone")
-    website: Optional[str] = Field(default=None, description="Website URL")
-    address_street: Optional[str] = Field(default=None, description="Street address")
-    address_city: Optional[str] = Field(default=None, description="City")
-    address_state: Optional[str] = Field(default=None, description="State/Province")
-    address_postal_code: Optional[str] = Field(default=None, description="Postal code")
-    tax_id: Optional[str] = Field(default=None, description="Tax ID")
-    registration_number: Optional[str] = Field(
-        default=None, description="Registration number"
-    )
-    metadata: Optional[dict] = Field(default=None, description="Additional metadata")
+    name: str | None = Field(default=None, description="Organization name")
+    legal_name: str | None = Field(default=None, description="Legal business name")
+    email: EmailStr | None = Field(default=None, description="Contact email")
+    phone: str | None = Field(default=None, description="Contact phone")
+    website: str | None = Field(default=None, description="Website URL")
+    address_street: str | None = Field(default=None, description="Street address")
+    address_city: str | None = Field(default=None, description="City")
+    address_state: str | None = Field(default=None, description="State/Province")
+    address_postal_code: str | None = Field(default=None, description="Postal code")
+    tax_id: str | None = Field(default=None, description="Tax ID")
+    registration_number: str | None = Field(default=None, description="Registration number")
+    metadata: dict | None = Field(default=None, description="Additional metadata")
 
 
 class UpdateOrganizationSettingsRequest(BaseModel):
-    allow_mobile_money: Optional[bool] = None
-    allow_international: Optional[bool] = None
-    require_2fa: Optional[bool] = None
-    max_daily_transaction_limit: Optional[float] = None
-    allowed_currencies: Optional[list[str]] = None
-    webhook_url: Optional[str] = None
-    api_callback_url: Optional[str] = None
+    allow_mobile_money: bool | None = None
+    allow_international: bool | None = None
+    require_2fa: bool | None = None
+    max_daily_transaction_limit: float | None = None
+    allowed_currencies: list[str] | None = None
+    webhook_url: str | None = None
+    api_callback_url: str | None = None
 
 
 class OrganizationResponse(BaseModel):
     id: str
     name: str
-    legal_name: Optional[str]
+    legal_name: str | None
     organization_type: OrganizationType
     email: str
-    phone: Optional[str]
-    website: Optional[str]
+    phone: str | None
+    website: str | None
     address_country: str
     status: OrganizationStatus
     kyb_status: str
     settings: OrganizationSettings
 
 
-@router.post(
-    "/", response_model=OrganizationResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=OrganizationResponse, status_code=status.HTTP_201_CREATED)
 async def create_organization(
     request: CreateOrganizationRequest,
     service: Annotated[OrganizationService, Depends(get_organization_service)],
@@ -138,11 +129,11 @@ async def get_organization(
 
 @router.get("/", response_model=list[OrganizationResponse])
 async def list_organizations(
-    limit: int = Query(default=50, le=100),
-    offset: int = Query(default=0, ge=0),
-    org_status: Optional[OrganizationStatus] = Query(default=None, alias="status"),
     service: Annotated[OrganizationService, Depends(get_organization_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
+    limit: int = Query(default=50, le=100),
+    offset: int = Query(default=0, ge=0),
+    org_status: OrganizationStatus | None = Query(default=None, alias="status"),
 ):
     """List organizations"""
     try:
@@ -196,9 +187,7 @@ async def update_organization_settings(
         current_settings.update(update_data)
 
         new_settings = OrganizationSettings(**current_settings)
-        organization = await service.update_organization_settings(
-            organization_id, new_settings
-        )
+        organization = await service.update_organization_settings(organization_id, new_settings)
         return organization
     except Exception as e:
         raise HTTPException(

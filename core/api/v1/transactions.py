@@ -2,16 +2,16 @@
 Transaction API endpoints
 """
 
-from typing import Annotated, Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from ...models.transaction import Transaction, TransactionType, TransactionStatus
+from ...exceptions import AccountNotFoundError, InsufficientFundsError
+from ...models.transaction import TransactionStatus, TransactionType
 from ...services import TransactionService
-from ...exceptions import InsufficientFundsError, AccountNotFoundError
-from ..dependencies import get_transaction_service, get_current_user
-
+from ..dependencies import get_current_user, get_transaction_service
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -21,7 +21,7 @@ class DepositRequest(BaseModel):
     to_account_id: str = Field(..., description="Destination account")
     amount: Decimal = Field(..., gt=0, description="Amount to deposit")
     currency: str = Field(default="USD", description="Currency")
-    description: Optional[str] = Field(default=None, description="Description")
+    description: str | None = Field(default=None, description="Description")
     metadata: dict = Field(default_factory=dict, description="Metadata")
 
 
@@ -29,7 +29,7 @@ class WithdrawalRequest(BaseModel):
     from_account_id: str = Field(..., description="Source account")
     amount: Decimal = Field(..., gt=0, description="Amount to withdraw")
     currency: str = Field(default="USD", description="Currency")
-    description: Optional[str] = Field(default=None, description="Description")
+    description: str | None = Field(default=None, description="Description")
     metadata: dict = Field(default_factory=dict, description="Metadata")
 
 
@@ -38,20 +38,20 @@ class TransferRequest(BaseModel):
     to_account_id: str = Field(..., description="Destination account")
     amount: Decimal = Field(..., gt=0, description="Amount to transfer")
     currency: str = Field(default="USD", description="Currency")
-    description: Optional[str] = Field(default=None, description="Description")
+    description: str | None = Field(default=None, description="Description")
     metadata: dict = Field(default_factory=dict, description="Metadata")
 
 
 class TransactionResponse(BaseModel):
     id: str
     transaction_type: TransactionType
-    from_account_id: Optional[str]
-    to_account_id: Optional[str]
+    from_account_id: str | None
+    to_account_id: str | None
     amount: Decimal
     currency: str
     status: TransactionStatus
-    description: Optional[str]
-    reference: Optional[str]
+    description: str | None
+    reference: str | None
 
 
 @router.post("/deposit", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
@@ -154,10 +154,10 @@ async def get_transaction(
 @router.get("/account/{account_id}", response_model=list[TransactionResponse])
 async def list_account_transactions(
     account_id: str,
-    limit: int = Query(default=50, le=100),
-    offset: int = Query(default=0, ge=0),
     service: Annotated[TransactionService, Depends(get_transaction_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
+    limit: int = Query(default=50, le=100),
+    offset: int = Query(default=0, ge=0),
 ):
     """List transactions for an account"""
     try:

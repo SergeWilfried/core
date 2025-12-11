@@ -2,15 +2,15 @@
 Payment API endpoints
 """
 
-from typing import Annotated, Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from ...models.payment import Payment, PaymentMethod, PaymentStatus, MobileMoneyProvider
+from ...models.payment import MobileMoneyProvider, PaymentMethod, PaymentStatus
 from ...services import PaymentService
-from ..dependencies import get_payment_service, get_current_user
-
+from ..dependencies import get_current_user, get_payment_service
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -22,7 +22,7 @@ class CreatePaymentRequest(BaseModel):
     currency: str = Field(default="USD", description="Currency")
     payment_method: PaymentMethod = Field(..., description="Payment method")
     destination: str = Field(..., description="Payment destination")
-    description: Optional[str] = Field(default=None, description="Description")
+    description: str | None = Field(default=None, description="Description")
     metadata: dict = Field(default_factory=dict, description="Metadata")
 
 
@@ -32,7 +32,7 @@ class ACHPaymentRequest(BaseModel):
     account_number: str = Field(..., description="Account number")
     amount: Decimal = Field(..., gt=0, description="Amount")
     currency: str = Field(default="USD", description="Currency")
-    description: Optional[str] = Field(default=None, description="Description")
+    description: str | None = Field(default=None, description="Description")
 
 
 class WirePaymentRequest(BaseModel):
@@ -41,25 +41,24 @@ class WirePaymentRequest(BaseModel):
     swift_code: str = Field(..., description="SWIFT/BIC code")
     amount: Decimal = Field(..., gt=0, description="Amount")
     currency: str = Field(default="USD", description="Currency")
-    description: Optional[str] = Field(default=None, description="Description")
+    description: str | None = Field(default=None, description="Description")
 
 
 class MobileMoneyPaymentRequest(BaseModel):
     from_account_id: str = Field(..., description="Source account")
     phone_number: str = Field(
-        ...,
-        description="Recipient phone number in E.164 format (e.g., +254712345678)"
+        ..., description="Recipient phone number in E.164 format (e.g., +254712345678)"
     )
     provider: MobileMoneyProvider = Field(..., description="Mobile money provider")
     country_code: str = Field(
         ...,
         description="ISO 3166-1 alpha-2 country code (e.g., KE, UG)",
         min_length=2,
-        max_length=2
+        max_length=2,
     )
     amount: Decimal = Field(..., gt=0, description="Amount")
     currency: str = Field(..., description="Currency (e.g., KES, UGX, TZS)")
-    description: Optional[str] = Field(default=None, description="Description")
+    description: str | None = Field(default=None, description="Description")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
 
@@ -71,8 +70,8 @@ class PaymentResponse(BaseModel):
     payment_method: PaymentMethod
     destination: str
     status: PaymentStatus
-    description: Optional[str]
-    reference: Optional[str]
+    description: str | None
+    reference: str | None
 
 
 @router.post("/", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
@@ -194,10 +193,10 @@ async def get_payment(
 @router.get("/account/{account_id}", response_model=list[PaymentResponse])
 async def list_account_payments(
     account_id: str,
-    limit: int = Query(default=50, le=100),
-    offset: int = Query(default=0, ge=0),
     service: Annotated[PaymentService, Depends(get_payment_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
+    limit: int = Query(default=50, le=100),
+    offset: int = Query(default=0, ge=0),
 ):
     """List payments for an account"""
     try:
