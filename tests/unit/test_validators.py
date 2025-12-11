@@ -2,9 +2,15 @@
 Unit tests for validators
 """
 
-import pytest
 from decimal import Decimal
 
+import pytest
+
+from core.exceptions import (
+    InvalidAmountError,
+    InvalidCurrencyError,
+    ValidationError,
+)
 from core.utils.validators import (
     validate_amount,
     validate_currency,
@@ -12,11 +18,6 @@ from core.utils.validators import (
     validate_phone,
     validate_routing_number,
     validate_swift_code,
-)
-from core.exceptions import (
-    InvalidAmountError,
-    InvalidCurrencyError,
-    ValidationError,
 )
 
 

@@ -2,56 +2,52 @@
 Pytest configuration and fixtures
 """
 
-import pytest
 import asyncio
 import os
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from decimal import Decimal
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from core.client import FormanceBankingClient
 from core.config import Settings
 from core.repositories.formance import FormanceRepository
 from core.services import (
     AccountService,
-    TransactionService,
-    PaymentService,
-    CustomerService,
     CardService,
+    CustomerService,
     LedgerService,
+    PaymentService,
+    TransactionService,
 )
 from tests.factories import (
-    CustomerFactory,
     AccountFactory,
-    TransactionFactory,
-    PaymentFactory,
     CardFactory,
+    CustomerFactory,
+    PaymentFactory,
+    TransactionFactory,
 )
-
 
 # ========================================
 # Pytest Configuration
 # ========================================
 
+
 def pytest_configure(config):
     """Configure pytest with custom markers"""
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test (fast, isolated)"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test (fast, isolated)")
     config.addinivalue_line(
         "markers", "integration: mark test as an integration test (uses Formance sandbox)"
     )
-    config.addinivalue_line(
-        "markers", "e2e: mark test as an end-to-end test (full API flow)"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow (may take >1 second)"
-    )
+    config.addinivalue_line("markers", "e2e: mark test as an end-to-end test (full API flow)")
+    config.addinivalue_line("markers", "slow: mark test as slow (may take >1 second)")
 
 
 # ========================================
 # Event Loop
 # ========================================
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -65,6 +61,7 @@ def event_loop():
 # Configuration
 # ========================================
 
+
 @pytest.fixture(scope="session")
 def test_settings():
     """Test settings"""
@@ -72,10 +69,7 @@ def test_settings():
         app_name="BaaS Core Banking Test",
         environment="test",
         debug=True,
-        formance_base_url=os.getenv(
-            "FORMANCE_TEST_BASE_URL",
-            "https://sandbox.formance.cloud"
-        ),
+        formance_base_url=os.getenv("FORMANCE_TEST_BASE_URL", "https://sandbox.formance.cloud"),
         formance_client_id=os.getenv("FORMANCE_TEST_CLIENT_ID", "test_client_id"),
         formance_client_secret=os.getenv("FORMANCE_TEST_CLIENT_SECRET", "test_secret"),
     )
@@ -85,8 +79,9 @@ def test_settings():
 # Formance Client & Repository
 # ========================================
 
+
 @pytest.fixture
-async def formance_client(test_settings) -> AsyncGenerator[FormanceBankingClient, None]:
+async def formance_client(test_settings) -> AsyncGenerator[FormanceBankingClient]:
     """Fixture for Formance client (integration tests)"""
     client = FormanceBankingClient(
         base_url=test_settings.formance_base_url,
@@ -120,6 +115,7 @@ def mock_formance_repository():
 # ========================================
 # Services (Real)
 # ========================================
+
 
 @pytest.fixture
 def account_service(formance_repository: FormanceRepository) -> AccountService:
@@ -161,6 +157,7 @@ def ledger_service(formance_repository: FormanceRepository) -> LedgerService:
 # Services (Mocked)
 # ========================================
 
+
 @pytest.fixture
 def mock_account_service(mock_formance_repository):
     """Mock Account service for unit tests"""
@@ -188,6 +185,7 @@ def mock_customer_service(mock_formance_repository):
 # ========================================
 # Test Data Factories
 # ========================================
+
 
 @pytest.fixture
 def customer_factory():
@@ -222,6 +220,7 @@ def card_factory():
 # ========================================
 # Sample Test Data
 # ========================================
+
 
 @pytest.fixture
 def sample_customer():
@@ -293,6 +292,7 @@ def sample_card_dict():
 # Common Test Scenarios
 # ========================================
 
+
 @pytest.fixture
 def customer_with_accounts(sample_customer):
     """Customer with checking and savings accounts"""
@@ -343,6 +343,7 @@ def two_customers_with_accounts():
 # API Testing
 # ========================================
 
+
 @pytest.fixture
 def api_headers():
     """Standard API headers for testing"""
@@ -356,6 +357,7 @@ def api_headers():
 def api_client():
     """HTTP client for API testing"""
     from httpx import AsyncClient
+
     from core.api.app import app
 
     async def _client():
@@ -368,6 +370,7 @@ def api_client():
 # ========================================
 # Cleanup Helpers
 # ========================================
+
 
 @pytest.fixture
 def cleanup_list():
@@ -384,9 +387,11 @@ def cleanup_list():
 # Assertion Helpers
 # ========================================
 
+
 @pytest.fixture
 def assert_decimal_equal():
     """Helper to assert decimal equality"""
+
     def _assert(actual: Decimal, expected: Decimal, places: int = 2):
         assert round(actual, places) == round(expected, places)
 

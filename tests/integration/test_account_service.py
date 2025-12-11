@@ -2,11 +2,8 @@
 Integration tests for Account service
 """
 
-import pytest
-from decimal import Decimal
 
-from core.models.account import AccountType, AccountStatus
-from core.exceptions import AccountNotFoundError
+import pytest
 
 
 @pytest.mark.asyncio

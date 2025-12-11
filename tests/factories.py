@@ -5,19 +5,17 @@ Use these factories in your tests to create consistent test data.
 """
 
 import time
+from datetime import datetime
 from decimal import Decimal
-from datetime import datetime, timedelta
-from typing import Optional
 from uuid import uuid4
 
 from faker import Faker
 
-from core.models.account import Account, AccountType, AccountStatus
-from core.models.transaction import Transaction, TransactionType, TransactionStatus
-from core.models.customer import Customer, CustomerStatus, KYCStatus, Address
+from core.models.account import Account, AccountStatus, AccountType
+from core.models.card import Card, CardStatus, CardType
+from core.models.customer import Address, Customer, CustomerStatus, KYCStatus
 from core.models.payment import Payment, PaymentMethod, PaymentStatus
-from core.models.card import Card, CardType, CardStatus
-
+from core.models.transaction import Transaction, TransactionStatus, TransactionType
 
 fake = Faker()
 
@@ -44,10 +42,7 @@ class CustomerFactory:
     @staticmethod
     def create_with_kyc(**kwargs):
         """Create a KYC-verified customer"""
-        return CustomerFactory.create(
-            kyc_status=KYCStatus.VERIFIED,
-            **kwargs
-        )
+        return CustomerFactory.create(kyc_status=KYCStatus.VERIFIED, **kwargs)
 
     @staticmethod
     def create_dict(**kwargs):
@@ -85,16 +80,13 @@ class AccountFactory:
     """Factory for creating test accounts"""
 
     @staticmethod
-    def create(customer_id: Optional[str] = None, **kwargs):
+    def create(customer_id: str | None = None, **kwargs):
         """Create an account with test data"""
         customer_id = customer_id or f"cust_{uuid4().hex[:8]}"
         account_type = kwargs.get("account_type", AccountType.CHECKING)
 
         return Account(
-            id=kwargs.get(
-                "id",
-                f"customers:{customer_id}:{account_type.value}"
-            ),
+            id=kwargs.get("id", f"customers:{customer_id}:{account_type.value}"),
             customer_id=customer_id,
             account_type=account_type,
             currency=kwargs.get("currency", "USD"),
@@ -108,14 +100,10 @@ class AccountFactory:
     @staticmethod
     def create_with_balance(balance: Decimal, **kwargs):
         """Create an account with specific balance"""
-        return AccountFactory.create(
-            balance=balance,
-            available_balance=balance,
-            **kwargs
-        )
+        return AccountFactory.create(balance=balance, available_balance=balance, **kwargs)
 
     @staticmethod
-    def create_dict(customer_id: Optional[str] = None, **kwargs):
+    def create_dict(customer_id: str | None = None, **kwargs):
         """Create account as dictionary (for repository mocks)"""
         account = AccountFactory.create(customer_id, **kwargs)
         return {
@@ -159,7 +147,7 @@ class TransactionFactory:
             from_account_id=None,
             to_account_id=to_account_id,
             amount=amount,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
@@ -170,23 +158,18 @@ class TransactionFactory:
             from_account_id=from_account_id,
             to_account_id=None,
             amount=amount,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
-    def create_transfer(
-        from_account_id: str,
-        to_account_id: str,
-        amount: Decimal,
-        **kwargs
-    ):
+    def create_transfer(from_account_id: str, to_account_id: str, amount: Decimal, **kwargs):
         """Create a transfer transaction"""
         return TransactionFactory.create(
             transaction_type=TransactionType.TRANSFER,
             from_account_id=from_account_id,
             to_account_id=to_account_id,
             amount=amount,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
@@ -235,7 +218,7 @@ class PaymentFactory:
             from_account_id=from_account_id,
             amount=amount,
             payment_method=PaymentMethod.ACH,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
@@ -245,7 +228,7 @@ class PaymentFactory:
             from_account_id=from_account_id,
             amount=amount,
             payment_method=PaymentMethod.WIRE,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
@@ -327,4 +310,5 @@ def get_test_timestamp():
 def pytest_configure(config):
     """Add timestamp to pytest namespace"""
     import pytest
+
     pytest.timestamp = get_test_timestamp()

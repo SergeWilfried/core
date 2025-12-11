@@ -2,58 +2,63 @@
 Unit tests for regulatory reporting functionality
 """
 
-import pytest
 from datetime import datetime, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-from core.models.regulatory import (
-    SuspiciousActivityReport,
-    CurrencyTransactionReport,
-    RegulatoryReportingConfig,
-    ReportType,
-    ReportStatus,
-    ReportPriority,
-    SuspiciousActivityType,
-)
+import pytest
+
+from core.exceptions import ValidationError
 from core.models.compliance import (
     ComplianceCheck,
     ComplianceCheckType,
     ComplianceStatus,
     RiskLevel,
 )
+from core.models.regulatory import (
+    CurrencyTransactionReport,
+    RegulatoryReportingConfig,
+    ReportPriority,
+    ReportStatus,
+    ReportType,
+    SuspiciousActivityReport,
+    SuspiciousActivityType,
+)
 from core.services.regulatory import RegulatoryReportingService
-from core.exceptions import RegulatoryReportError, ValidationError
 
 
 @pytest.fixture
 def mock_repository():
     """Mock Formance repository"""
     repo = MagicMock()
-    repo.get_organization = AsyncMock(return_value={
-        "id": "org_test",
-        "name": "Test Bank",
-        "organization_type": "bank",
-        "email": "test@bank.com",
-        "phone": "+1234567890",
-        "address": {
-            "street": "123 Main St",
-            "city": "New York",
-            "state": "NY",
-            "postal_code": "10001",
-            "country": "US",
-        },
-    })
-    repo.get_customer = AsyncMock(return_value={
-        "id": "cust_test",
-        "organization_id": "org_test",
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john@example.com",
-        "phone": "+1234567890",
-        "status": "active",
-        "kyc_status": "verified",
-    })
+    repo.get_organization = AsyncMock(
+        return_value={
+            "id": "org_test",
+            "name": "Test Bank",
+            "organization_type": "bank",
+            "email": "test@bank.com",
+            "phone": "+1234567890",
+            "address": {
+                "street": "123 Main St",
+                "city": "New York",
+                "state": "NY",
+                "postal_code": "10001",
+                "country": "US",
+            },
+        }
+    )
+    repo.get_customer = AsyncMock(
+        return_value={
+            "id": "cust_test",
+            "organization_id": "org_test",
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john@example.com",
+            "phone": "+1234567890",
+            "status": "active",
+            "kyc_status": "verified",
+        }
+    )
     return repo
 
 

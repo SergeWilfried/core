@@ -2,15 +2,11 @@
 Unit tests for domain models
 """
 
-import pytest
 from decimal import Decimal
-from datetime import datetime
 
-from core.models.account import Account, AccountType, AccountStatus
-from core.models.transaction import Transaction, TransactionType, TransactionStatus
+from core.models.account import Account, AccountStatus, AccountType
 from core.models.customer import Customer, CustomerStatus, KYCStatus
-from core.models.payment import Payment, PaymentMethod, PaymentStatus
-from core.models.card import Card, CardType, CardStatus
+from core.models.transaction import Transaction, TransactionStatus, TransactionType
 
 
 class TestAccountModel:
