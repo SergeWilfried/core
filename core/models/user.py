@@ -2,10 +2,10 @@
 User domain models
 """
 
-from enum import Enum
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserRole(str, Enum):
@@ -226,14 +226,12 @@ class User(BaseModel):
     email: EmailStr = Field(..., description="User email")
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")
-    phone: Optional[str] = Field(default=None, description="Phone number")
+    phone: str | None = Field(default=None, description="Phone number")
 
     # Authentication
-    password_hash: Optional[str] = Field(
-        default=None, description="Hashed password", exclude=True
-    )
+    password_hash: str | None = Field(default=None, description="Hashed password", exclude=True)
     email_verified: bool = Field(default=False, description="Email verification status")
-    email_verified_at: Optional[datetime] = Field(
+    email_verified_at: datetime | None = Field(
         default=None, description="Email verification timestamp"
     )
 
@@ -244,37 +242,26 @@ class User(BaseModel):
     )
 
     # Branch access (NEW for multi-branch support)
-    primary_branch_id: Optional[str] = Field(
+    primary_branch_id: str | None = Field(
         None, description="User's primary branch (None for org-wide users)"
     )
     accessible_branches: list[str] = Field(
-        default_factory=list,
-        description="Branches user can access (empty list = all branches)"
+        default_factory=list, description="Branches user can access (empty list = all branches)"
     )
 
     # Status
     status: UserStatus = Field(default=UserStatus.PENDING, description="User status")
-    last_login_at: Optional[datetime] = Field(
-        default=None, description="Last login timestamp"
-    )
-    failed_login_attempts: int = Field(
-        default=0, description="Failed login attempts counter"
-    )
+    last_login_at: datetime | None = Field(default=None, description="Last login timestamp")
+    failed_login_attempts: int = Field(default=0, description="Failed login attempts counter")
 
     # 2FA
     two_factor_enabled: bool = Field(default=False, description="2FA enabled status")
-    two_factor_secret: Optional[str] = Field(
-        default=None, description="2FA secret", exclude=True
-    )
+    two_factor_secret: str | None = Field(default=None, description="2FA secret", exclude=True)
 
     # Metadata
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    updated_at: Optional[datetime] = Field(
-        default=None, description="Last update timestamp"
-    )
-    created_by: Optional[str] = Field(default=None, description="Created by user ID")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
+    created_by: str | None = Field(default=None, description="Created by user ID")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
     @property
@@ -292,11 +279,7 @@ class User(BaseModel):
 
     def can_login(self) -> bool:
         """Check if user can login"""
-        return (
-            self.is_active()
-            and self.is_email_verified()
-            and self.status != UserStatus.LOCKED
-        )
+        return self.is_active() and self.is_email_verified() and self.status != UserStatus.LOCKED
 
     def get_all_permissions(self) -> list[Permission]:
         """Get all permissions (role-based + custom)"""
@@ -348,16 +331,12 @@ class UserSession(BaseModel):
     user_id: str = Field(..., description="User ID")
     organization_id: str = Field(..., description="Organization ID")
     token: str = Field(..., description="Session token")
-    refresh_token: Optional[str] = Field(default=None, description="Refresh token")
-    ip_address: Optional[str] = Field(default=None, description="IP address")
-    user_agent: Optional[str] = Field(default=None, description="User agent")
+    refresh_token: str | None = Field(default=None, description="Refresh token")
+    ip_address: str | None = Field(default=None, description="IP address")
+    user_agent: str | None = Field(default=None, description="User agent")
     expires_at: datetime = Field(..., description="Session expiration")
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    last_accessed_at: Optional[datetime] = Field(
-        default=None, description="Last access timestamp"
-    )
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    last_accessed_at: datetime | None = Field(default=None, description="Last access timestamp")
 
     def is_expired(self) -> bool:
         """Check if session is expired"""

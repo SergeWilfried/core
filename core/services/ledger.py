@@ -2,13 +2,10 @@
 Ledger operations service
 """
 
-from typing import Optional, Any
-from decimal import Decimal
-from datetime import datetime
 import logging
+from decimal import Decimal
 
 from ..repositories.formance import FormanceRepository
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +19,7 @@ class LedgerService:
     async def create_ledger(
         self,
         name: str,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> dict:
         """
         Create a new ledger
@@ -36,9 +33,7 @@ class LedgerService:
         """
         logger.info(f"Creating ledger: {name}")
 
-        ledger_data = await self.formance_repo.create_ledger(
-            name=name, metadata=metadata or {}
-        )
+        ledger_data = await self.formance_repo.create_ledger(name=name, metadata=metadata or {})
 
         logger.info(f"Ledger created: {ledger_data.get('id')}")
         return ledger_data
@@ -68,8 +63,8 @@ class LedgerService:
         self,
         ledger_id: str,
         postings: list[dict],
-        reference: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        reference: str | None = None,
+        metadata: dict | None = None,
     ) -> dict:
         """
         Post a transaction with custom postings
@@ -94,9 +89,7 @@ class LedgerService:
 
         return transaction_data
 
-    async def get_account_balances(
-        self, ledger_id: str, account_id: str
-    ) -> dict[str, Decimal]:
+    async def get_account_balances(self, ledger_id: str, account_id: str) -> dict[str, Decimal]:
         """
         Get balances for an account across all currencies
 
@@ -107,14 +100,9 @@ class LedgerService:
         Returns:
             Dictionary of currency -> balance
         """
-        balances = await self.formance_repo.get_account_balances(
-            ledger_id, account_id
-        )
+        balances = await self.formance_repo.get_account_balances(ledger_id, account_id)
 
-        return {
-            currency: Decimal(str(amount))
-            for currency, amount in balances.items()
-        }
+        return {currency: Decimal(str(amount)) for currency, amount in balances.items()}
 
     async def get_aggregated_balances(
         self, ledger_id: str, address_pattern: str
@@ -129,18 +117,11 @@ class LedgerService:
         Returns:
             Dictionary of currency -> total balance
         """
-        balances = await self.formance_repo.get_aggregated_balances(
-            ledger_id, address_pattern
-        )
+        balances = await self.formance_repo.get_aggregated_balances(ledger_id, address_pattern)
 
-        return {
-            currency: Decimal(str(amount))
-            for currency, amount in balances.items()
-        }
+        return {currency: Decimal(str(amount)) for currency, amount in balances.items()}
 
-    async def revert_transaction(
-        self, ledger_id: str, transaction_id: str
-    ) -> dict:
+    async def revert_transaction(self, ledger_id: str, transaction_id: str) -> dict:
         """
         Revert a transaction
 
@@ -153,9 +134,7 @@ class LedgerService:
         """
         logger.warning(f"Reverting transaction {transaction_id} in ledger {ledger_id}")
 
-        reversal_data = await self.formance_repo.revert_transaction(
-            ledger_id, transaction_id
-        )
+        reversal_data = await self.formance_repo.revert_transaction(ledger_id, transaction_id)
 
         return reversal_data
 
@@ -180,6 +159,4 @@ class LedgerService:
         """
         logger.info(f"Adding metadata to {target_type} {target_id}")
 
-        return await self.formance_repo.add_metadata(
-            ledger_id, target_type, target_id, metadata
-        )
+        return await self.formance_repo.add_metadata(ledger_id, target_type, target_id, metadata)

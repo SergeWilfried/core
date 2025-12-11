@@ -2,11 +2,11 @@
 Transaction domain models
 """
 
-from enum import Enum
-from decimal import Decimal
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from decimal import Decimal
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TransactionType(str, Enum):
@@ -39,31 +39,21 @@ class Transaction(BaseModel):
     id: str = Field(..., description="Transaction identifier")
     organization_id: str = Field(..., description="Organization identifier")
     branch_id: str = Field(..., description="Branch that processed transaction")
-    processed_by_user_id: Optional[str] = Field(
+    processed_by_user_id: str | None = Field(
         None, description="User ID who processed the transaction"
     )
     transaction_type: TransactionType = Field(..., description="Transaction type")
-    from_account_id: Optional[str] = Field(
-        default=None, description="Source account"
-    )
-    to_account_id: Optional[str] = Field(
-        default=None, description="Destination account"
-    )
+    from_account_id: str | None = Field(default=None, description="Source account")
+    to_account_id: str | None = Field(default=None, description="Destination account")
     amount: Decimal = Field(..., description="Transaction amount")
     currency: str = Field(default="USD", description="Transaction currency")
     status: TransactionStatus = Field(
         default=TransactionStatus.PENDING, description="Transaction status"
     )
-    description: Optional[str] = Field(default=None, description="Transaction description")
-    reference: Optional[str] = Field(
-        default=None, description="External reference"
-    )
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    completed_at: Optional[datetime] = Field(
-        default=None, description="Completion timestamp"
-    )
+    description: str | None = Field(default=None, description="Transaction description")
+    reference: str | None = Field(default=None, description="External reference")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    completed_at: datetime | None = Field(default=None, description="Completion timestamp")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
     def is_completed(self) -> bool:

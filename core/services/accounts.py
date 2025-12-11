@@ -2,14 +2,12 @@
 Account management service
 """
 
-from typing import Optional
-from decimal import Decimal
 import logging
+from decimal import Decimal
 
-from ..models.account import Account, AccountType, AccountStatus
-from ..repositories.formance import FormanceRepository
 from ..exceptions import AccountNotFoundError, InsufficientFundsError
-
+from ..models.account import Account, AccountStatus, AccountType
+from ..repositories.formance import FormanceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ class AccountService:
         customer_id: str,
         account_type: AccountType,
         currency: str = "USD",
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> Account:
         """
         Create a new customer account
@@ -98,9 +96,7 @@ class AccountService:
         accounts_data = await self.formance_repo.list_accounts_by_customer(customer_id)
         return [Account(**data) for data in accounts_data]
 
-    async def update_account_status(
-        self, account_id: str, status: AccountStatus
-    ) -> Account:
+    async def update_account_status(self, account_id: str, status: AccountStatus) -> Account:
         """
         Update account status (ACTIVE, FROZEN, CLOSED)
 

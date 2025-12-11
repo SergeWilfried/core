@@ -13,35 +13,32 @@ import logging
 import secrets
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Optional, List
 
-from ..models.regulatory import (
-    SuspiciousActivityReport,
-    CurrencyTransactionReport,
-    RegulatoryReportSummary,
-    RegulatoryReportingConfig,
-    ReportType,
-    ReportStatus,
-    ReportPriority,
-    SuspiciousActivityType,
-    FinancialInstitution,
-    SubjectInformation,
-    TransactionDetails,
-)
-from ..models.compliance import (
-    ComplianceCheck,
-    ComplianceAlert,
-    ComplianceStatus,
-    RiskLevel,
-)
-from ..models.transaction import Transaction
-from ..models.customer import Customer
-from ..models.organization import Organization
-from ..repositories.formance import FormanceRepository
 from ..exceptions import (
     RegulatoryReportError,
     ValidationError,
 )
+from ..models.compliance import (
+    ComplianceAlert,
+    ComplianceCheck,
+    RiskLevel,
+)
+from ..models.customer import Customer
+from ..models.organization import Organization
+from ..models.regulatory import (
+    CurrencyTransactionReport,
+    FinancialInstitution,
+    RegulatoryReportingConfig,
+    RegulatoryReportSummary,
+    ReportPriority,
+    ReportStatus,
+    ReportType,
+    SubjectInformation,
+    SuspiciousActivityReport,
+    SuspiciousActivityType,
+    TransactionDetails,
+)
+from ..repositories.formance import FormanceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +102,7 @@ class RegulatoryReportingService:
 
         # Check aggregated transactions for the day
         day_start = transaction_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        day_end = day_start + timedelta(days=1)
+        day_start + timedelta(days=1)
 
         # TODO: Query actual transactions from database
         # For now, assume single transaction
@@ -124,7 +121,7 @@ class RegulatoryReportingService:
         self,
         organization_id: str,
         compliance_check: ComplianceCheck,
-        alert: Optional[ComplianceAlert] = None,
+        alert: ComplianceAlert | None = None,
     ) -> bool:
         """
         Check if Suspicious Activity Report (SAR) is required
@@ -158,16 +155,12 @@ class RegulatoryReportingService:
 
         # Check if sanctioned
         if compliance_check.sanctions_matches:
-            logger.warning(
-                f"SAR potentially required: Sanctions match detected"
-            )
+            logger.warning("SAR potentially required: Sanctions match detected")
             return True
 
         # Check if alert indicates suspicious activity
         if alert and alert.severity in [RiskLevel.HIGH, RiskLevel.CRITICAL]:
-            logger.warning(
-                f"SAR potentially required: High severity alert {alert.alert_type}"
-            )
+            logger.warning(f"SAR potentially required: High severity alert {alert.alert_type}")
             return True
 
         # Check if manual review flagged for SAR
@@ -181,9 +174,9 @@ class RegulatoryReportingService:
         self,
         organization_id: str,
         customer_id: str,
-        transaction_ids: List[str],
+        transaction_ids: list[str],
         prepared_by: str,
-        branch_id: Optional[str] = None,
+        branch_id: str | None = None,
     ) -> CurrencyTransactionReport:
         """
         Generate Currency Transaction Report (CTR)
@@ -219,7 +212,7 @@ class RegulatoryReportingService:
 
             # Get transactions
             # TODO: Fetch actual transactions from database
-            transactions: List[TransactionDetails] = []
+            transactions: list[TransactionDetails] = []
             total_cash_in = Decimal("0")
             total_cash_out = Decimal("0")
             transaction_date = datetime.utcnow()
@@ -287,14 +280,14 @@ class RegulatoryReportingService:
         self,
         organization_id: str,
         customer_id: str,
-        suspicious_activity_types: List[SuspiciousActivityType],
+        suspicious_activity_types: list[SuspiciousActivityType],
         narrative_summary: str,
-        transaction_ids: List[str],
+        transaction_ids: list[str],
         prepared_by: str,
         activity_start_date: datetime,
-        activity_end_date: Optional[datetime] = None,
-        compliance_check_ids: Optional[List[str]] = None,
-        alert_ids: Optional[List[str]] = None,
+        activity_end_date: datetime | None = None,
+        compliance_check_ids: list[str] | None = None,
+        alert_ids: list[str] | None = None,
         priority: ReportPriority = ReportPriority.NORMAL,
     ) -> SuspiciousActivityReport:
         """
@@ -342,7 +335,7 @@ class RegulatoryReportingService:
 
             # Get transactions
             # TODO: Fetch actual transactions from database
-            transactions: List[TransactionDetails] = []
+            transactions: list[TransactionDetails] = []
             total_amount = Decimal("0")
 
             for txn_id in transaction_ids:
@@ -401,7 +394,7 @@ class RegulatoryReportingService:
         report_type: ReportType,
         reviewed_by: str,
         approved: bool,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> bool:
         """
         Review a regulatory report
@@ -424,7 +417,6 @@ class RegulatoryReportingService:
         try:
             # TODO: Fetch report from database
             # Update status based on approval
-            new_status = ReportStatus.APPROVED if approved else ReportStatus.REJECTED
 
             # TODO: Update report in database
             logger.info(
@@ -493,13 +485,13 @@ class RegulatoryReportingService:
     async def list_reports(
         self,
         organization_id: str,
-        report_type: Optional[ReportType] = None,
-        status: Optional[ReportStatus] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        report_type: ReportType | None = None,
+        status: ReportStatus | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[RegulatoryReportSummary]:
+    ) -> list[RegulatoryReportSummary]:
         """
         List regulatory reports
 
@@ -517,8 +509,7 @@ class RegulatoryReportingService:
         """
         # TODO: Query reports from database with filters
         logger.info(
-            f"Listing reports for org {organization_id} "
-            f"(type={report_type}, status={status})"
+            f"Listing reports for org {organization_id} (type={report_type}, status={status})"
         )
 
         # Mock response
@@ -528,7 +519,7 @@ class RegulatoryReportingService:
         self,
         report_id: str,
         report_type: ReportType,
-    ) -> Optional[SuspiciousActivityReport | CurrencyTransactionReport]:
+    ) -> SuspiciousActivityReport | CurrencyTransactionReport | None:
         """
         Get regulatory report by ID
 
@@ -562,9 +553,7 @@ class RegulatoryReportingService:
         logger.info(f"Updated reporting config for org {organization_id}")
         return config
 
-    async def _get_reporting_config(
-        self, organization_id: str
-    ) -> RegulatoryReportingConfig:
+    async def _get_reporting_config(self, organization_id: str) -> RegulatoryReportingConfig:
         """Get reporting configuration for organization"""
         # TODO: Fetch from database
         # For now, return default config

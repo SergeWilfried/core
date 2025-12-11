@@ -2,11 +2,11 @@
 Domain models for banking entities
 """
 
-from .account import Account, AccountType, AccountStatus
-from .transaction import Transaction, TransactionType, TransactionStatus
+from .account import Account, AccountStatus, AccountType
+from .card import Card, CardStatus, CardType
 from .customer import Customer, CustomerStatus, KYCStatus
 from .payment import Payment, PaymentMethod, PaymentStatus
-from .card import Card, CardType, CardStatus
+from .transaction import Transaction, TransactionStatus, TransactionType
 
 __all__ = [
     "Account",

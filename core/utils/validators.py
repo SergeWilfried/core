@@ -4,7 +4,6 @@ Business rule validators
 
 import re
 from decimal import Decimal
-from typing import Optional
 
 from ..exceptions import (
     InvalidAmountError,
@@ -12,12 +11,29 @@ from ..exceptions import (
     ValidationError,
 )
 
-
 # Currency codes (ISO 4217)
 VALID_CURRENCIES = {
-    "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "BRL",
+    "USD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "CAD",
+    "AUD",
+    "CHF",
+    "CNY",
+    "INR",
+    "BRL",
     # African currencies for mobile money
-    "KES", "TZS", "UGX", "GHS", "ZAR", "XOF", "XAF", "ZMW", "ZWL", "MZN"
+    "KES",
+    "TZS",
+    "UGX",
+    "GHS",
+    "ZAR",
+    "XOF",
+    "XAF",
+    "ZMW",
+    "ZWL",
+    "MZN",
 }
 
 # Mobile money provider to country mapping
@@ -35,7 +51,7 @@ MOBILE_MONEY_PROVIDER_COUNTRIES = {
 }
 
 
-def validate_amount(amount: Decimal, min_amount: Optional[Decimal] = None) -> None:
+def validate_amount(amount: Decimal, min_amount: Decimal | None = None) -> None:
     """
     Validate transaction amount
 
@@ -50,15 +66,11 @@ def validate_amount(amount: Decimal, min_amount: Optional[Decimal] = None) -> No
         raise InvalidAmountError("Amount must be greater than zero")
 
     if min_amount and amount < min_amount:
-        raise InvalidAmountError(
-            f"Amount must be at least {min_amount}"
-        )
+        raise InvalidAmountError(f"Amount must be at least {min_amount}")
 
     # Check for reasonable precision (2 decimal places for most currencies)
     if amount.as_tuple().exponent < -2:
-        raise InvalidAmountError(
-            "Amount has too many decimal places (max 2)"
-        )
+        raise InvalidAmountError("Amount has too many decimal places (max 2)")
 
 
 def validate_currency(currency: str) -> None:
@@ -77,9 +89,7 @@ def validate_currency(currency: str) -> None:
         )
 
     if currency.upper() not in VALID_CURRENCIES:
-        raise InvalidCurrencyError(
-            f"Unsupported currency: {currency}"
-        )
+        raise InvalidCurrencyError(f"Unsupported currency: {currency}")
 
 
 def validate_email(email: str) -> None:
@@ -92,7 +102,7 @@ def validate_email(email: str) -> None:
     Raises:
         ValidationError: If email is invalid
     """
-    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     if not re.match(email_pattern, email):
         raise ValidationError(f"Invalid email address: {email}")
 
@@ -108,7 +118,7 @@ def validate_phone(phone: str) -> None:
         ValidationError: If phone is invalid
     """
     # Remove common formatting characters
-    cleaned = re.sub(r'[\s\-\(\)\+]', '', phone)
+    cleaned = re.sub(r"[\s\-\(\)\+]", "", phone)
 
     # Check if it contains only digits
     if not cleaned.isdigit():
@@ -116,9 +126,7 @@ def validate_phone(phone: str) -> None:
 
     # Check length (typically 10-15 digits)
     if len(cleaned) < 10 or len(cleaned) > 15:
-        raise ValidationError(
-            f"Phone number must be between 10 and 15 digits: {phone}"
-        )
+        raise ValidationError(f"Phone number must be between 10 and 15 digits: {phone}")
 
 
 def validate_routing_number(routing_number: str) -> None:
@@ -132,25 +140,21 @@ def validate_routing_number(routing_number: str) -> None:
         ValidationError: If routing number is invalid
     """
     # Remove any non-digit characters
-    cleaned = re.sub(r'\D', '', routing_number)
+    cleaned = re.sub(r"\D", "", routing_number)
 
     if len(cleaned) != 9:
-        raise ValidationError(
-            "Routing number must be 9 digits"
-        )
+        raise ValidationError("Routing number must be 9 digits")
 
     # Validate using checksum algorithm
     digits = [int(d) for d in cleaned]
     checksum = (
-        3 * (digits[0] + digits[3] + digits[6]) +
-        7 * (digits[1] + digits[4] + digits[7]) +
-        (digits[2] + digits[5] + digits[8])
+        3 * (digits[0] + digits[3] + digits[6])
+        + 7 * (digits[1] + digits[4] + digits[7])
+        + (digits[2] + digits[5] + digits[8])
     ) % 10
 
     if checksum != 0:
-        raise ValidationError(
-            "Invalid routing number checksum"
-        )
+        raise ValidationError("Invalid routing number checksum")
 
 
 def validate_account_number(account_number: str) -> None:
@@ -164,13 +168,11 @@ def validate_account_number(account_number: str) -> None:
         ValidationError: If account number is invalid
     """
     # Remove any non-alphanumeric characters
-    cleaned = re.sub(r'\W', '', account_number)
+    cleaned = re.sub(r"\W", "", account_number)
 
     # Check length (typically 8-17 characters)
     if len(cleaned) < 8 or len(cleaned) > 17:
-        raise ValidationError(
-            "Account number must be between 8 and 17 characters"
-        )
+        raise ValidationError("Account number must be between 8 and 17 characters")
 
 
 def validate_swift_code(swift_code: str) -> None:
@@ -191,26 +193,18 @@ def validate_swift_code(swift_code: str) -> None:
     # DDD: Branch code (optional)
 
     if len(swift_code) not in [8, 11]:
-        raise ValidationError(
-            "SWIFT code must be 8 or 11 characters"
-        )
+        raise ValidationError("SWIFT code must be 8 or 11 characters")
 
     if not swift_code.isalnum():
-        raise ValidationError(
-            "SWIFT code must contain only letters and numbers"
-        )
+        raise ValidationError("SWIFT code must contain only letters and numbers")
 
     # First 4 characters should be letters (bank code)
     if not swift_code[:4].isalpha():
-        raise ValidationError(
-            "Invalid SWIFT code format"
-        )
+        raise ValidationError("Invalid SWIFT code format")
 
     # Next 2 characters should be letters (country code)
     if not swift_code[4:6].isalpha():
-        raise ValidationError(
-            "Invalid SWIFT code country"
-        )
+        raise ValidationError("Invalid SWIFT code country")
 
 
 def validate_card_number(card_number: str) -> None:
@@ -224,12 +218,10 @@ def validate_card_number(card_number: str) -> None:
         ValidationError: If card number is invalid
     """
     # Remove any non-digit characters
-    cleaned = re.sub(r'\D', '', card_number)
+    cleaned = re.sub(r"\D", "", card_number)
 
     if len(cleaned) < 13 or len(cleaned) > 19:
-        raise ValidationError(
-            "Card number must be between 13 and 19 digits"
-        )
+        raise ValidationError("Card number must be between 13 and 19 digits")
 
     # Luhn algorithm
     digits = [int(d) for d in cleaned]
@@ -243,9 +235,7 @@ def validate_card_number(card_number: str) -> None:
         checksum += digit
 
     if checksum % 10 != 0:
-        raise ValidationError(
-            "Invalid card number"
-        )
+        raise ValidationError("Invalid card number")
 
 
 def validate_e164_phone(phone: str) -> None:
@@ -262,7 +252,7 @@ def validate_e164_phone(phone: str) -> None:
         ValidationError: If phone number is invalid
     """
     # E.164 pattern: + followed by 1-3 digit country code and up to 14 more digits
-    e164_pattern = r'^\+[1-9]\d{1,14}$'
+    e164_pattern = r"^\+[1-9]\d{1,14}$"
 
     if not re.match(e164_pattern, phone):
         raise ValidationError(
@@ -285,9 +275,7 @@ def validate_mobile_money_provider(provider: str, country_code: str) -> None:
     country_upper = country_code.upper()
 
     if provider_lower not in MOBILE_MONEY_PROVIDER_COUNTRIES:
-        raise ValidationError(
-            f"Unknown mobile money provider: {provider}"
-        )
+        raise ValidationError(f"Unknown mobile money provider: {provider}")
 
     supported_countries = MOBILE_MONEY_PROVIDER_COUNTRIES[provider_lower]
     if country_upper not in supported_countries:
@@ -313,6 +301,4 @@ def validate_country_code(country_code: str) -> None:
         )
 
     if not country_code.isalpha():
-        raise ValidationError(
-            f"Country code must contain only letters: {country_code}"
-        )
+        raise ValidationError(f"Country code must contain only letters: {country_code}")

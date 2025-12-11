@@ -5,6 +5,7 @@ Logging configuration
 import logging
 import sys
 from typing import Any
+
 import structlog
 from structlog.types import Processor
 
@@ -35,10 +36,12 @@ def configure_logging() -> None:
     if settings.log_format == "json":
         processors.append(structlog.processors.JSONRenderer())
     else:
-        processors.extend([
-            structlog.processors.format_exc_info,
-            structlog.dev.ConsoleRenderer(),
-        ])
+        processors.extend(
+            [
+                structlog.processors.format_exc_info,
+                structlog.dev.ConsoleRenderer(),
+            ]
+        )
 
     structlog.configure(
         processors=processors,

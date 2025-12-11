@@ -3,14 +3,13 @@ Formance Banking Client
 Production-ready async client for Formance SDK
 """
 
-from typing import Optional
 import logging
+
 import httpx
 from formance_sdk_python import SDK
 from formance_sdk_python.httpclient import AsyncHttpClient
 
 from .config import get_settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +28,7 @@ class CustomAsyncClient(AsyncHttpClient):
         auth: httpx._types.AuthTypes
         | httpx._client.UseClientDefault
         | None = httpx.USE_CLIENT_DEFAULT,
-        follow_redirects: bool
-        | httpx._client.UseClientDefault = httpx.USE_CLIENT_DEFAULT,
+        follow_redirects: bool | httpx._client.UseClientDefault = httpx.USE_CLIENT_DEFAULT,
     ) -> httpx.Response:
         """Send HTTP request with custom headers and logging"""
         # Add custom headers
@@ -38,9 +36,7 @@ class CustomAsyncClient(AsyncHttpClient):
         request.headers["X-Client-Name"] = "baas-core"
 
         # Log request (remove sensitive data in production)
-        logger.debug(
-            f"Formance API Request: {request.method} {request.url}"
-        )
+        logger.debug(f"Formance API Request: {request.method} {request.url}")
 
         try:
             response = await self._client.send(
@@ -51,9 +47,7 @@ class CustomAsyncClient(AsyncHttpClient):
             )
 
             # Log response
-            logger.debug(
-                f"Formance API Response: {response.status_code}"
-            )
+            logger.debug(f"Formance API Response: {response.status_code}")
 
             return response
         except Exception as e:
@@ -65,16 +59,16 @@ class CustomAsyncClient(AsyncHttpClient):
         method: str,
         url: httpx._types.URLTypes,
         *,
-        content: Optional[httpx._types.RequestContent] = None,
-        data: Optional[httpx._types.RequestData] = None,
-        files: Optional[httpx._types.RequestFiles] = None,
-        json: Optional[any] = None,
-        params: Optional[httpx._types.QueryParamTypes] = None,
-        headers: Optional[httpx._types.HeaderTypes] = None,
-        cookies: Optional[httpx._types.CookieTypes] = None,
+        content: httpx._types.RequestContent | None = None,
+        data: httpx._types.RequestData | None = None,
+        files: httpx._types.RequestFiles | None = None,
+        json: any | None = None,
+        params: httpx._types.QueryParamTypes | None = None,
+        headers: httpx._types.HeaderTypes | None = None,
+        cookies: httpx._types.CookieTypes | None = None,
         timeout: httpx._types.TimeoutTypes
         | httpx._client.UseClientDefault = httpx.USE_CLIENT_DEFAULT,
-        extensions: Optional[httpx._types.RequestExtensions] = None,
+        extensions: httpx._types.RequestExtensions | None = None,
     ) -> httpx.Request:
         """Build HTTP request"""
         return self._client.build_request(

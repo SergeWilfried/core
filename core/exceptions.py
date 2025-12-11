@@ -222,9 +222,7 @@ class ExternalServiceError(BankingException):
 
     def __init__(self, message: str, service_name: str = "unknown"):
         self.service_name = service_name
-        super().__init__(
-            f"{service_name}: {message}", code="EXTERNAL_SERVICE_ERROR"
-        )
+        super().__init__(f"{service_name}: {message}", code="EXTERNAL_SERVICE_ERROR")
 
 
 # Compliance exceptions

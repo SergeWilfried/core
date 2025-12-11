@@ -11,13 +11,10 @@ This worker runs asynchronously to:
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Optional
 
 from ..client import FormanceBankingClient, get_formance_client
 from ..repositories.formance import FormanceRepository
 from ..services.compliance import ComplianceService
-from ..models.compliance import ComplianceAlert, RiskLevel
 
 logger = logging.getLogger(__name__)
 

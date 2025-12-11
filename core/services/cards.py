@@ -2,14 +2,12 @@
 Card management service
 """
 
-from typing import Optional
-from decimal import Decimal
 import logging
+from decimal import Decimal
 
-from ..models.card import Card, CardType, CardStatus
+from ..exceptions import CardNotFoundError
+from ..models.card import Card, CardStatus, CardType
 from ..repositories.formance import FormanceRepository
-from ..exceptions import CardNotFoundError, InvalidCardOperationError
-
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +23,8 @@ class CardService:
         account_id: str,
         customer_id: str,
         card_type: CardType,
-        spending_limit: Optional[Decimal] = None,
-        metadata: Optional[dict] = None,
+        spending_limit: Decimal | None = None,
+        metadata: dict | None = None,
     ) -> Card:
         """
         Create a new card (virtual or physical)
@@ -74,9 +72,7 @@ class CardService:
 
         return Card(**card_data)
 
-    async def list_customer_cards(
-        self, customer_id: str, active_only: bool = True
-    ) -> list[Card]:
+    async def list_customer_cards(self, customer_id: str, active_only: bool = True) -> list[Card]:
         """
         List all cards for a customer
 
@@ -87,9 +83,7 @@ class CardService:
         Returns:
             List of Card objects
         """
-        cards_data = await self.formance_repo.list_cards_by_customer(
-            customer_id, active_only
-        )
+        cards_data = await self.formance_repo.list_cards_by_customer(customer_id, active_only)
         return [Card(**data) for data in cards_data]
 
     async def activate_card(self, card_id: str) -> Card:
@@ -104,13 +98,11 @@ class CardService:
         """
         logger.info(f"Activating card {card_id}")
 
-        card_data = await self.formance_repo.update_card_status(
-            card_id, CardStatus.ACTIVE
-        )
+        card_data = await self.formance_repo.update_card_status(card_id, CardStatus.ACTIVE)
 
         return Card(**card_data)
 
-    async def freeze_card(self, card_id: str, reason: Optional[str] = None) -> Card:
+    async def freeze_card(self, card_id: str, reason: str | None = None) -> Card:
         """
         Freeze a card (temporary)
 
@@ -123,9 +115,7 @@ class CardService:
         """
         logger.warning(f"Freezing card {card_id}: {reason or 'No reason provided'}")
 
-        card_data = await self.formance_repo.update_card_status(
-            card_id, CardStatus.FROZEN
-        )
+        card_data = await self.formance_repo.update_card_status(card_id, CardStatus.FROZEN)
 
         return Card(**card_data)
 
@@ -141,13 +131,11 @@ class CardService:
         """
         logger.info(f"Unfreezing card {card_id}")
 
-        card_data = await self.formance_repo.update_card_status(
-            card_id, CardStatus.ACTIVE
-        )
+        card_data = await self.formance_repo.update_card_status(card_id, CardStatus.ACTIVE)
 
         return Card(**card_data)
 
-    async def cancel_card(self, card_id: str, reason: Optional[str] = None) -> Card:
+    async def cancel_card(self, card_id: str, reason: str | None = None) -> Card:
         """
         Cancel a card (permanent)
 
@@ -160,15 +148,11 @@ class CardService:
         """
         logger.info(f"Cancelling card {card_id}: {reason or 'Customer request'}")
 
-        card_data = await self.formance_repo.update_card_status(
-            card_id, CardStatus.CANCELLED
-        )
+        card_data = await self.formance_repo.update_card_status(card_id, CardStatus.CANCELLED)
 
         return Card(**card_data)
 
-    async def update_spending_limit(
-        self, card_id: str, new_limit: Decimal
-    ) -> Card:
+    async def update_spending_limit(self, card_id: str, new_limit: Decimal) -> Card:
         """
         Update card spending limit
 

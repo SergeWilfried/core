@@ -3,10 +3,9 @@ Sanctions screening utility for OFAC, UN, EU and other sanction lists
 """
 
 import logging
-from typing import Optional
 from difflib import SequenceMatcher
 
-from ..models.compliance import SanctionListType, SanctionMatch
+from ..models.compliance import SanctionListType
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +86,7 @@ class SanctionsScreening:
     def screen(
         self,
         name: str,
-        list_types: Optional[list[SanctionListType]] = None,
+        list_types: list[SanctionListType] | None = None,
         threshold: float = 0.8,
     ) -> list[dict]:
         """
@@ -190,9 +189,7 @@ class SanctionsScreening:
         # Sort by match score descending
         matches.sort(key=lambda x: x["match_score"], reverse=True)
 
-        logger.info(
-            f"Sanctions screening for '{name}': {len(matches)} matches found"
-        )
+        logger.info(f"Sanctions screening for '{name}': {len(matches)} matches found")
 
         return matches
 

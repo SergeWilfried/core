@@ -5,13 +5,17 @@ Branch management service
 import logging
 import secrets
 from datetime import datetime
-from typing import Optional
-from decimal import Decimal
 
-from ..models.branch import Branch, BranchType, BranchStatus, BranchSettings, BranchPerformanceMetrics
+from ..exceptions import NotFoundError, ValidationError
+from ..models.branch import (
+    Branch,
+    BranchPerformanceMetrics,
+    BranchSettings,
+    BranchStatus,
+    BranchType,
+)
 from ..models.organization import Organization
 from ..repositories.formance import FormanceRepository
-from ..exceptions import ValidationError, NotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -29,18 +33,18 @@ class BranchService:
         code: str,
         branch_type: BranchType,
         address_country: str,
-        parent_branch_id: Optional[str] = None,
-        email: Optional[str] = None,
-        phone: Optional[str] = None,
-        address_street: Optional[str] = None,
-        address_city: Optional[str] = None,
-        address_state: Optional[str] = None,
-        address_postal_code: Optional[str] = None,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
-        manager_user_id: Optional[str] = None,
-        settings: Optional[BranchSettings] = None,
-        metadata: Optional[dict] = None,
+        parent_branch_id: str | None = None,
+        email: str | None = None,
+        phone: str | None = None,
+        address_street: str | None = None,
+        address_city: str | None = None,
+        address_state: str | None = None,
+        address_postal_code: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        manager_user_id: str | None = None,
+        settings: BranchSettings | None = None,
+        metadata: dict | None = None,
     ) -> Branch:
         """
         Create a new branch
@@ -69,16 +73,14 @@ class BranchService:
         """
         branch_id = f"branch_{secrets.token_hex(12)}"
 
-        logger.info(
-            f"Creating branch {code} for organization {organization_id}"
-        )
+        logger.info(f"Creating branch {code} for organization {organization_id}")
 
         # Validate organization exists
         org_data = await self.formance_repo.get_organization(organization_id)
         if not org_data:
             raise NotFoundError(f"Organization {organization_id} not found")
 
-        org = Organization(**org_data)
+        Organization(**org_data)
 
         # Validate parent branch if specified
         if parent_branch_id:
@@ -88,9 +90,7 @@ class BranchService:
 
             parent = Branch(**parent_data)
             if parent.organization_id != organization_id:
-                raise ValidationError(
-                    "Parent branch must belong to same organization"
-                )
+                raise ValidationError("Parent branch must belong to same organization")
 
         # Create branch
         branch_data = await self.formance_repo.create_branch(
@@ -138,8 +138,8 @@ class BranchService:
     async def list_organization_branches(
         self,
         organization_id: str,
-        status: Optional[BranchStatus] = None,
-        branch_type: Optional[BranchType] = None,
+        status: BranchStatus | None = None,
+        branch_type: BranchType | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[Branch]:
@@ -166,9 +166,7 @@ class BranchService:
 
         return [Branch(**data) for data in branches_data]
 
-    async def update_branch(
-        self, branch_id: str, update_data: dict
-    ) -> Branch:
+    async def update_branch(self, branch_id: str, update_data: dict) -> Branch:
         """
         Update branch
 
@@ -179,9 +177,7 @@ class BranchService:
         Returns:
             Updated Branch object
         """
-        branch_data = await self.formance_repo.update_branch(
-            branch_id, update_data
-        )
+        branch_data = await self.formance_repo.update_branch(branch_id, update_data)
         return Branch(**branch_data)
 
     async def activate_branch(self, branch_id: str) -> Branch:
@@ -196,9 +192,7 @@ class BranchService:
 
     async def suspend_branch(self, branch_id: str) -> Branch:
         """Suspend a branch"""
-        return await self.update_branch(
-            branch_id, {"status": BranchStatus.SUSPENDED}
-        )
+        return await self.update_branch(branch_id, {"status": BranchStatus.SUSPENDED})
 
     async def close_branch(self, branch_id: str) -> Branch:
         """Close a branch permanently"""
@@ -214,7 +208,7 @@ class BranchService:
         self,
         user_id: str,
         branch_id: str,
-        role_at_branch: Optional[str] = None,
+        role_at_branch: str | None = None,
         is_primary: bool = False,
     ) -> dict:
         """
@@ -241,20 +235,14 @@ class BranchService:
             "assigned_at": datetime.utcnow(),
         }
 
-        logger.info(
-            f"User {user_id} assigned to branch {branch_id}"
-        )
+        logger.info(f"User {user_id} assigned to branch {branch_id}")
 
         return assignment
 
-    async def remove_user_from_branch(
-        self, user_id: str, branch_id: str
-    ) -> None:
+    async def remove_user_from_branch(self, user_id: str, branch_id: str) -> None:
         """Remove user assignment from branch"""
         # TODO: Implement actual storage
-        logger.info(
-            f"User {user_id} removed from branch {branch_id}"
-        )
+        logger.info(f"User {user_id} removed from branch {branch_id}")
 
     async def get_branch_users(
         self, branch_id: str, limit: int = 50, offset: int = 0
@@ -304,9 +292,7 @@ class BranchService:
 
         return metrics
 
-    async def get_effective_settings(
-        self, branch_id: str
-    ) -> tuple[BranchSettings, dict]:
+    async def get_effective_settings(self, branch_id: str) -> tuple[BranchSettings, dict]:
         """
         Get effective settings for branch considering org inheritance
 
@@ -318,9 +304,7 @@ class BranchService:
         """
         branch = await self.get_branch(branch_id)
 
-        org_data = await self.formance_repo.get_organization(
-            branch.organization_id
-        )
+        org_data = await self.formance_repo.get_organization(branch.organization_id)
         org = Organization(**org_data)
 
         # Calculate effective settings

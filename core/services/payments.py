@@ -2,19 +2,16 @@
 Payment processing service
 """
 
-from typing import Optional
-from decimal import Decimal
 import logging
+from decimal import Decimal
 
-from ..models.payment import Payment, PaymentMethod, PaymentStatus, MobileMoneyProvider
+from ..models.payment import MobileMoneyProvider, Payment, PaymentMethod, PaymentStatus
 from ..repositories.formance import FormanceRepository
-from ..exceptions import PaymentProcessingError
 from ..utils.validators import (
+    validate_country_code,
     validate_e164_phone,
     validate_mobile_money_provider,
-    validate_country_code,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +29,8 @@ class PaymentService:
         currency: str,
         payment_method: PaymentMethod,
         destination: str,
-        description: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        description: str | None = None,
+        metadata: dict | None = None,
     ) -> Payment:
         """
         Create a new payment
@@ -130,7 +127,7 @@ class PaymentService:
         account_number: str,
         amount: Decimal,
         currency: str = "USD",
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Payment:
         """
         Process an ACH payment
@@ -163,7 +160,7 @@ class PaymentService:
         swift_code: str,
         amount: Decimal,
         currency: str = "USD",
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Payment:
         """
         Process a wire transfer
@@ -197,8 +194,8 @@ class PaymentService:
         country_code: str,
         amount: Decimal,
         currency: str,
-        description: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        description: str | None = None,
+        metadata: dict | None = None,
     ) -> Payment:
         """
         Process a mobile money payment
@@ -235,11 +232,13 @@ class PaymentService:
 
         # Add provider and country to metadata for tracking
         payment_metadata = metadata or {}
-        payment_metadata.update({
-            "mobile_money_provider": provider.value,
-            "country_code": country_code.upper(),
-            "phone_number": phone_number,
-        })
+        payment_metadata.update(
+            {
+                "mobile_money_provider": provider.value,
+                "country_code": country_code.upper(),
+                "phone_number": phone_number,
+            }
+        )
 
         return await self.create_payment(
             from_account_id=from_account_id,

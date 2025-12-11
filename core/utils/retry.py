@@ -3,20 +3,20 @@ Retry logic for external API calls
 """
 
 import asyncio
-from typing import TypeVar, Callable, Optional, Type
-from functools import wraps
 import logging
+from collections.abc import Callable
+from functools import wraps
+from typing import TypeVar
 
 from tenacity import (
+    before_sleep_log,
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
 )
 
-from ..exceptions import FormanceAPIError, ExternalServiceError
-
+from ..exceptions import ExternalServiceError, FormanceAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def retry_on_api_error(
     max_attempts: int = 3,
     min_wait: int = 1,
     max_wait: int = 10,
-    exceptions: tuple[Type[Exception], ...] = (FormanceAPIError, ExternalServiceError),
+    exceptions: tuple[type[Exception], ...] = (FormanceAPIError, ExternalServiceError),
 ):
     """
     Retry decorator for API calls with exponential backoff
@@ -52,7 +52,7 @@ async def retry_async(
     max_attempts: int = 3,
     delay: float = 1.0,
     backoff: float = 2.0,
-    exceptions: tuple[Type[Exception], ...] = (Exception,),
+    exceptions: tuple[type[Exception], ...] = (Exception,),
 ) -> T:
     """
     Manually retry an async function with exponential backoff
@@ -86,9 +86,7 @@ async def retry_async(
                 await asyncio.sleep(current_delay)
                 current_delay *= backoff
             else:
-                logger.error(
-                    f"All {max_attempts} attempts failed. Last error: {e}"
-                )
+                logger.error(f"All {max_attempts} attempts failed. Last error: {e}")
 
     if last_exception:
         raise last_exception
@@ -104,6 +102,7 @@ def with_retry(max_attempts: int = 3):
         async def my_function():
             # function code
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -111,5 +110,7 @@ def with_retry(max_attempts: int = 3):
                 lambda: func(*args, **kwargs),
                 max_attempts=max_attempts,
             )
+
         return wrapper
+
     return decorator

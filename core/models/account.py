@@ -2,11 +2,11 @@
 Account domain models
 """
 
-from enum import Enum
-from decimal import Decimal
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from decimal import Decimal
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AccountType(str, Enum):
@@ -39,18 +39,10 @@ class Account(BaseModel):
     account_type: AccountType = Field(..., description="Account type")
     currency: str = Field(default="USD", description="Account currency")
     balance: Decimal = Field(default=Decimal("0"), description="Current balance")
-    available_balance: Decimal = Field(
-        default=Decimal("0"), description="Available balance"
-    )
-    status: AccountStatus = Field(
-        default=AccountStatus.ACTIVE, description="Account status"
-    )
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    updated_at: Optional[datetime] = Field(
-        default=None, description="Last update timestamp"
-    )
+    available_balance: Decimal = Field(default=Decimal("0"), description="Available balance")
+    status: AccountStatus = Field(default=AccountStatus.ACTIVE, description="Account status")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
     def is_active(self) -> bool:

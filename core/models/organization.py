@@ -2,10 +2,10 @@
 Organization domain models
 """
 
-from enum import Enum
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class OrganizationType(str, Enum):
@@ -36,53 +36,42 @@ class OrganizationSettings(BaseModel):
     allow_mobile_money: bool = Field(default=True, description="Enable mobile money")
     allow_international: bool = Field(default=False, description="Enable international payments")
     require_2fa: bool = Field(default=False, description="Require 2FA for all users")
-    max_daily_transaction_limit: Optional[float] = Field(
+    max_daily_transaction_limit: float | None = Field(
         default=None, description="Maximum daily transaction limit"
     )
     allowed_currencies: list[str] = Field(
         default_factory=lambda: ["USD"], description="Allowed currencies"
     )
-    webhook_url: Optional[str] = Field(default=None, description="Webhook URL for events")
-    api_callback_url: Optional[str] = Field(default=None, description="API callback URL")
+    webhook_url: str | None = Field(default=None, description="Webhook URL for events")
+    api_callback_url: str | None = Field(default=None, description="API callback URL")
 
     # Compliance settings
     compliance_level: str = Field(
-        default="standard",
-        description="Compliance level: basic, standard, strict"
+        default="standard", description="Compliance level: basic, standard, strict"
     )
     enable_sanctions_screening: bool = Field(
-        default=True,
-        description="Enable sanctions screening (OFAC, UN, EU)"
+        default=True, description="Enable sanctions screening (OFAC, UN, EU)"
     )
     enable_velocity_monitoring: bool = Field(
-        default=True,
-        description="Enable velocity/pattern monitoring"
+        default=True, description="Enable velocity/pattern monitoring"
     )
     enable_pep_screening: bool = Field(
-        default=False,
-        description="Enable PEP (Politically Exposed Person) screening"
+        default=False, description="Enable PEP (Politically Exposed Person) screening"
     )
-    max_transaction_amount: Optional[float] = Field(
-        default=None,
-        description="Maximum transaction amount (hard limit)"
+    max_transaction_amount: float | None = Field(
+        default=None, description="Maximum transaction amount (hard limit)"
     )
     restricted_countries: list[str] = Field(
-        default_factory=list,
-        description="ISO country codes blocked for this organization"
+        default_factory=list, description="ISO country codes blocked for this organization"
     )
-    require_manual_review_above: Optional[float] = Field(
-        default=None,
-        description="Amount threshold requiring manual review"
+    require_manual_review_above: float | None = Field(
+        default=None, description="Amount threshold requiring manual review"
     )
     auto_block_high_risk: bool = Field(
-        default=True,
-        description="Automatically block transactions with high risk scores"
+        default=True, description="Automatically block transactions with high risk scores"
     )
     risk_score_threshold: int = Field(
-        default=75,
-        ge=0,
-        le=100,
-        description="Risk score threshold for blocking/review (0-100)"
+        default=75, ge=0, le=100, description="Risk score threshold for blocking/review (0-100)"
     )
 
 
@@ -93,22 +82,22 @@ class Organization(BaseModel):
 
     id: str = Field(..., description="Organization identifier")
     name: str = Field(..., description="Organization name")
-    legal_name: Optional[str] = Field(default=None, description="Legal business name")
+    legal_name: str | None = Field(default=None, description="Legal business name")
     organization_type: OrganizationType = Field(..., description="Type of organization")
     email: EmailStr = Field(..., description="Organization contact email")
-    phone: Optional[str] = Field(default=None, description="Organization phone")
-    website: Optional[str] = Field(default=None, description="Organization website")
+    phone: str | None = Field(default=None, description="Organization phone")
+    website: str | None = Field(default=None, description="Organization website")
 
     # Address
-    address_street: Optional[str] = Field(default=None, description="Street address")
-    address_city: Optional[str] = Field(default=None, description="City")
-    address_state: Optional[str] = Field(default=None, description="State/Province")
-    address_postal_code: Optional[str] = Field(default=None, description="Postal code")
+    address_street: str | None = Field(default=None, description="Street address")
+    address_city: str | None = Field(default=None, description="City")
+    address_state: str | None = Field(default=None, description="State/Province")
+    address_postal_code: str | None = Field(default=None, description="Postal code")
     address_country: str = Field(..., description="Country code (ISO 3166-1 alpha-2)")
 
     # Business details
-    tax_id: Optional[str] = Field(default=None, description="Tax identification number")
-    registration_number: Optional[str] = Field(
+    tax_id: str | None = Field(default=None, description="Tax identification number")
+    registration_number: str | None = Field(
         default=None, description="Business registration number"
     )
 
@@ -116,12 +105,8 @@ class Organization(BaseModel):
     status: OrganizationStatus = Field(
         default=OrganizationStatus.PENDING, description="Organization status"
     )
-    kyb_status: str = Field(
-        default="not_started", description="KYB (Know Your Business) status"
-    )
-    verified_at: Optional[datetime] = Field(
-        default=None, description="Verification timestamp"
-    )
+    kyb_status: str = Field(default="not_started", description="KYB (Know Your Business) status")
+    verified_at: datetime | None = Field(default=None, description="Verification timestamp")
 
     # Settings
     settings: OrganizationSettings = Field(
@@ -129,13 +114,9 @@ class Organization(BaseModel):
     )
 
     # Metadata
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    updated_at: Optional[datetime] = Field(
-        default=None, description="Last update timestamp"
-    )
-    created_by: Optional[str] = Field(default=None, description="Created by user ID")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
+    created_by: str | None = Field(default=None, description="Created by user ID")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
     def is_active(self) -> bool:

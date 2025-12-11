@@ -7,12 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from ..config import get_settings
-from .v1 import accounts, transactions, customers, payments, compliance, regulatory
+from .v1 import accounts, compliance, customers, payments, regulatory, transactions
 
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application"""
-    settings = get_settings()
+    get_settings()
 
     app = FastAPI(
         title="BaaS Core Banking API",

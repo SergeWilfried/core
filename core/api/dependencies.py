@@ -3,23 +3,23 @@ FastAPI dependencies
 """
 
 from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..client import FormanceBankingClient
 from ..config import get_settings
 from ..repositories.formance import FormanceRepository
 from ..services import (
     AccountService,
-    TransactionService,
-    PaymentService,
-    CustomerService,
     CardService,
+    CustomerService,
     LedgerService,
+    PaymentService,
+    TransactionService,
 )
 from ..services.organizations import OrganizationService
 from ..services.users import UserService
-
 
 # Security
 security = HTTPBearer()
@@ -42,70 +42,70 @@ async def get_formance_client() -> FormanceBankingClient:
 
 
 async def get_formance_repository(
-    client: Annotated[FormanceBankingClient, Depends(get_formance_client)]
+    client: Annotated[FormanceBankingClient, Depends(get_formance_client)],
 ) -> FormanceRepository:
     """Get Formance repository instance"""
     return FormanceRepository(client)
 
 
 async def get_account_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> AccountService:
     """Get Account service instance"""
     return AccountService(repo)
 
 
 async def get_transaction_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> TransactionService:
     """Get Transaction service instance"""
     return TransactionService(repo)
 
 
 async def get_payment_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> PaymentService:
     """Get Payment service instance"""
     return PaymentService(repo)
 
 
 async def get_customer_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> CustomerService:
     """Get Customer service instance"""
     return CustomerService(repo)
 
 
 async def get_card_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> CardService:
     """Get Card service instance"""
     return CardService(repo)
 
 
 async def get_ledger_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> LedgerService:
     """Get Ledger service instance"""
     return LedgerService(repo)
 
 
 async def get_organization_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> OrganizationService:
     """Get Organization service instance"""
     return OrganizationService(repo)
 
 
 async def get_user_service(
-    repo: Annotated[FormanceRepository, Depends(get_formance_repository)]
+    repo: Annotated[FormanceRepository, Depends(get_formance_repository)],
 ) -> UserService:
     """Get User service instance"""
     return UserService(repo)
 
 
 async def verify_api_key(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
 ) -> str:
     """
     Verify API key from Bearer token
@@ -129,9 +129,7 @@ async def verify_api_key(
     return token
 
 
-async def get_current_user(
-    token: Annotated[str, Depends(verify_api_key)]
-) -> dict:
+async def get_current_user(token: Annotated[str, Depends(verify_api_key)]) -> dict:
     """
     Get current authenticated user
 

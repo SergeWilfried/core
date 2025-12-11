@@ -2,18 +2,17 @@
 Formance repository for data access
 """
 
-from typing import Optional, Any
-from decimal import Decimal
 import logging
+from decimal import Decimal
+from typing import Any
 
 from ..client import FormanceBankingClient
 from ..models.account import AccountType
-from ..models.transaction import TransactionType
+from ..models.card import CardStatus, CardType
+from ..models.organization import OrganizationSettings, OrganizationStatus, OrganizationType
 from ..models.payment import PaymentMethod, PaymentStatus
-from ..models.card import CardType, CardStatus
-from ..models.organization import OrganizationType, OrganizationStatus, OrganizationSettings
-from ..models.user import UserRole, UserStatus, Permission
-
+from ..models.transaction import TransactionType
+from ..models.user import Permission, UserRole, UserStatus
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class FormanceRepository:
             "metadata": metadata,
         }
 
-    async def get_account(self, account_id: str) -> Optional[dict]:
+    async def get_account(self, account_id: str) -> dict | None:
         """Get account by ID"""
         # TODO: Implement actual Formance SDK call
         return None
@@ -62,9 +61,7 @@ class FormanceRepository:
         # TODO: Implement actual Formance SDK call
         return []
 
-    async def update_account_metadata(
-        self, account_id: str, metadata: dict
-    ) -> dict:
+    async def update_account_metadata(self, account_id: str, metadata: dict) -> dict:
         """Update account metadata"""
         # TODO: Implement actual Formance SDK call
         return {}
@@ -78,11 +75,11 @@ class FormanceRepository:
     async def create_transaction(
         self,
         transaction_type: TransactionType,
-        from_account: Optional[str],
-        to_account: Optional[str],
+        from_account: str | None,
+        to_account: str | None,
         amount: Decimal,
         currency: str,
-        description: Optional[str],
+        description: str | None,
         metadata: dict,
     ) -> dict:
         """Create a transaction"""
@@ -105,9 +102,7 @@ class FormanceRepository:
         # TODO: Implement actual Formance SDK call
         return {}
 
-    async def list_transactions(
-        self, account_id: str, limit: int, offset: int
-    ) -> list[dict]:
+    async def list_transactions(self, account_id: str, limit: int, offset: int) -> list[dict]:
         """List transactions for account"""
         # TODO: Implement actual Formance SDK call
         return []
@@ -120,7 +115,7 @@ class FormanceRepository:
         currency: str,
         payment_method: PaymentMethod,
         destination: str,
-        description: Optional[str],
+        description: str | None,
         metadata: dict,
     ) -> dict:
         """
@@ -149,8 +144,8 @@ class FormanceRepository:
             Source: mobile_money:{provider}:pending
             Destination: mobile_money:{provider}:{phone_number}
         """
-        from datetime import datetime
         import secrets
+        from datetime import datetime
 
         payment_id = f"pay_{secrets.token_hex(12)}"
 
@@ -205,16 +200,12 @@ class FormanceRepository:
         # TODO: Implement actual Formance SDK call
         return {}
 
-    async def list_payments(
-        self, account_id: str, limit: int, offset: int
-    ) -> list[dict]:
+    async def list_payments(self, account_id: str, limit: int, offset: int) -> list[dict]:
         """List payments for account"""
         # TODO: Implement actual Formance SDK call
         return []
 
-    async def update_payment_status(
-        self, payment_id: str, status: PaymentStatus
-    ) -> dict:
+    async def update_payment_status(self, payment_id: str, status: PaymentStatus) -> dict:
         """Update payment status"""
         # TODO: Implement actual Formance SDK call
         return {}
@@ -225,8 +216,8 @@ class FormanceRepository:
         email: str,
         first_name: str,
         last_name: str,
-        phone: Optional[str],
-        address: Optional[dict],
+        phone: str | None,
+        address: dict | None,
         metadata: dict,
     ) -> dict:
         """Create a customer"""
@@ -244,12 +235,12 @@ class FormanceRepository:
             "metadata": metadata,
         }
 
-    async def get_customer(self, customer_id: str) -> Optional[dict]:
+    async def get_customer(self, customer_id: str) -> dict | None:
         """Get customer by ID"""
         # TODO: Implement actual storage call
         return None
 
-    async def get_customer_by_email(self, email: str) -> Optional[dict]:
+    async def get_customer_by_email(self, email: str) -> dict | None:
         """Get customer by email"""
         # TODO: Implement actual storage call
         return None
@@ -259,9 +250,7 @@ class FormanceRepository:
         # TODO: Implement actual storage call
         return {}
 
-    async def update_customer_metadata(
-        self, customer_id: str, metadata: dict
-    ) -> dict:
+    async def update_customer_metadata(self, customer_id: str, metadata: dict) -> dict:
         """Update customer metadata"""
         # TODO: Implement actual storage call
         return {}
@@ -272,7 +261,7 @@ class FormanceRepository:
         account_id: str,
         customer_id: str,
         card_type: CardType,
-        spending_limit: Optional[Decimal],
+        spending_limit: Decimal | None,
         metadata: dict,
     ) -> dict:
         """Create a card"""
@@ -288,14 +277,12 @@ class FormanceRepository:
             "metadata": metadata,
         }
 
-    async def get_card(self, card_id: str) -> Optional[dict]:
+    async def get_card(self, card_id: str) -> dict | None:
         """Get card by ID"""
         # TODO: Implement actual Formance SDK call
         return None
 
-    async def list_cards_by_customer(
-        self, customer_id: str, active_only: bool
-    ) -> list[dict]:
+    async def list_cards_by_customer(self, customer_id: str, active_only: bool) -> list[dict]:
         """List cards for customer"""
         # TODO: Implement actual Formance SDK call
         return []
@@ -335,7 +322,7 @@ class FormanceRepository:
         self,
         ledger_id: str,
         postings: list[dict],
-        reference: Optional[str],
+        reference: str | None,
         metadata: dict,
     ) -> dict:
         """
@@ -370,8 +357,8 @@ class FormanceRepository:
             - organization_id: Organization ID
             - customer_id: Customer ID
         """
-        from datetime import datetime
         import secrets
+        from datetime import datetime
 
         try:
             transaction_id = f"txn_{secrets.token_hex(12)}"
@@ -415,23 +402,17 @@ class FormanceRepository:
             logger.error(f"Failed to post transaction to Formance ledger: {e}")
             raise
 
-    async def get_account_balances(
-        self, ledger_id: str, account_id: str
-    ) -> dict[str, Any]:
+    async def get_account_balances(self, ledger_id: str, account_id: str) -> dict[str, Any]:
         """Get account balances"""
         # TODO: Implement actual Formance SDK call
         return {}
 
-    async def get_aggregated_balances(
-        self, ledger_id: str, address_pattern: str
-    ) -> dict[str, Any]:
+    async def get_aggregated_balances(self, ledger_id: str, address_pattern: str) -> dict[str, Any]:
         """Get aggregated balances"""
         # TODO: Implement actual Formance SDK call
         return {}
 
-    async def revert_transaction(
-        self, ledger_id: str, transaction_id: str
-    ) -> dict:
+    async def revert_transaction(self, ledger_id: str, transaction_id: str) -> dict:
         """Revert a transaction"""
         # TODO: Implement actual Formance SDK call
         return {}
@@ -451,20 +432,20 @@ class FormanceRepository:
     async def create_organization(
         self,
         name: str,
-        legal_name: Optional[str],
+        legal_name: str | None,
         organization_type: OrganizationType,
         email: str,
-        phone: Optional[str],
-        website: Optional[str],
-        address_street: Optional[str],
-        address_city: Optional[str],
-        address_state: Optional[str],
-        address_postal_code: Optional[str],
+        phone: str | None,
+        website: str | None,
+        address_street: str | None,
+        address_city: str | None,
+        address_state: str | None,
+        address_postal_code: str | None,
         address_country: str,
-        tax_id: Optional[str],
-        registration_number: Optional[str],
+        tax_id: str | None,
+        registration_number: str | None,
         settings: OrganizationSettings,
-        created_by: Optional[str],
+        created_by: str | None,
         metadata: dict,
     ) -> dict:
         """Create an organization"""
@@ -502,9 +483,7 @@ class FormanceRepository:
         # TODO: Implement actual storage call
         return {}
 
-    async def update_organization(
-        self, organization_id: str, update_data: dict
-    ) -> dict:
+    async def update_organization(self, organization_id: str, update_data: dict) -> dict:
         """Update organization"""
         # TODO: Implement actual storage call
         from datetime import datetime
@@ -512,9 +491,7 @@ class FormanceRepository:
         update_data["updated_at"] = datetime.utcnow()
         return {}
 
-    async def list_organizations(
-        self, limit: int, offset: int, status: Optional[str]
-    ) -> list[dict]:
+    async def list_organizations(self, limit: int, offset: int, status: str | None) -> list[dict]:
         """List organizations"""
         # TODO: Implement actual storage call
         return []
@@ -527,10 +504,10 @@ class FormanceRepository:
         first_name: str,
         last_name: str,
         role: UserRole,
-        password_hash: Optional[str],
-        phone: Optional[str],
+        password_hash: str | None,
+        phone: str | None,
         permissions: list[Permission],
-        created_by: Optional[str],
+        created_by: str | None,
         metadata: dict,
     ) -> dict:
         """Create a user"""
@@ -566,9 +543,7 @@ class FormanceRepository:
         # TODO: Implement actual storage call
         return {}
 
-    async def get_user_by_email(
-        self, email: str, organization_id: Optional[str]
-    ) -> dict:
+    async def get_user_by_email(self, email: str, organization_id: str | None) -> dict:
         """Get user by email"""
         # TODO: Implement actual storage call
         return {}
@@ -586,8 +561,8 @@ class FormanceRepository:
         organization_id: str,
         limit: int,
         offset: int,
-        status: Optional[str],
-        role: Optional[str],
+        status: str | None,
+        role: str | None,
     ) -> list[dict]:
         """List users in an organization"""
         # TODO: Implement actual storage call
@@ -600,14 +575,14 @@ class FormanceRepository:
         organization_id: str,
         token: str,
         refresh_token: str,
-        ip_address: Optional[str],
-        user_agent: Optional[str],
+        ip_address: str | None,
+        user_agent: str | None,
         expires_at: Any,
     ) -> dict:
         """Create a user session"""
         # TODO: Implement actual storage call (Redis, PostgreSQL, etc.)
-        from datetime import datetime
         import secrets
+        from datetime import datetime
 
         session_id = f"sess_{secrets.token_hex(8)}"
         return {
@@ -623,7 +598,7 @@ class FormanceRepository:
             "last_accessed_at": None,
         }
 
-    async def get_session_by_token(self, token: str) -> Optional[dict]:
+    async def get_session_by_token(self, token: str) -> dict | None:
         """Get session by token"""
         # TODO: Implement actual storage call
         return None

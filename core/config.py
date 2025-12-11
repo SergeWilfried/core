@@ -3,7 +3,7 @@ Configuration management
 """
 
 from functools import lru_cache
-from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     formance_base_url: str = "https://api.formance.cloud"
     formance_client_id: str = ""
     formance_client_secret: str = ""
-    formance_organization_id: Optional[str] = None
-    formance_stack_id: Optional[str] = None
+    formance_organization_id: str | None = None
+    formance_stack_id: str | None = None
 
     # API
     api_host: str = "0.0.0.0"
@@ -42,12 +42,12 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
 
     # Database (if needed for local storage)
-    database_url: Optional[str] = None
+    database_url: str | None = None
     database_pool_size: int = 10
     database_max_overflow: int = 20
 
     # Redis (for caching/sessions)
-    redis_url: Optional[str] = None
+    redis_url: str | None = None
     redis_max_connections: int = 50
 
     # Logging
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 60
 
     # Monitoring
-    sentry_dsn: Optional[str] = None
+    sentry_dsn: str | None = None
     enable_metrics: bool = False
 
 

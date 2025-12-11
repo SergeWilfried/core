@@ -2,10 +2,10 @@
 Customer domain models
 """
 
-from enum import Enum
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class CustomerStatus(str, Enum):
@@ -48,20 +48,14 @@ class Customer(BaseModel):
     email: EmailStr = Field(..., description="Customer email")
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")
-    phone: Optional[str] = Field(default=None, description="Phone number")
-    address: Optional[Address] = Field(default=None, description="Customer address")
-    status: CustomerStatus = Field(
-        default=CustomerStatus.ACTIVE, description="Customer status"
-    )
+    phone: str | None = Field(default=None, description="Phone number")
+    address: Address | None = Field(default=None, description="Customer address")
+    status: CustomerStatus = Field(default=CustomerStatus.ACTIVE, description="Customer status")
     kyc_status: KYCStatus = Field(
         default=KYCStatus.NOT_STARTED, description="KYC verification status"
     )
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    updated_at: Optional[datetime] = Field(
-        default=None, description="Last update timestamp"
-    )
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
     @property

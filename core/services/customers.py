@@ -2,13 +2,11 @@
 Customer management service
 """
 
-from typing import Optional
 import logging
 
+from ..exceptions import CustomerNotFoundError, KYCRequiredError
 from ..models.customer import Customer, CustomerStatus, KYCStatus
 from ..repositories.formance import FormanceRepository
-from ..exceptions import CustomerNotFoundError, KYCRequiredError
-
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +22,9 @@ class CustomerService:
         email: str,
         first_name: str,
         last_name: str,
-        phone: Optional[str] = None,
-        address: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        phone: str | None = None,
+        address: dict | None = None,
+        metadata: dict | None = None,
     ) -> Customer:
         """
         Create a new customer
@@ -76,7 +74,7 @@ class CustomerService:
 
         return Customer(**customer_data)
 
-    async def get_customer_by_email(self, email: str) -> Optional[Customer]:
+    async def get_customer_by_email(self, email: str) -> Customer | None:
         """
         Get customer by email
 
@@ -95,12 +93,12 @@ class CustomerService:
     async def update_customer(
         self,
         customer_id: str,
-        email: Optional[str] = None,
-        first_name: Optional[str] = None,
-        last_name: Optional[str] = None,
-        phone: Optional[str] = None,
-        address: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        phone: str | None = None,
+        address: dict | None = None,
+        metadata: dict | None = None,
     ) -> Customer:
         """
         Update customer information
@@ -133,14 +131,12 @@ class CustomerService:
         if metadata:
             update_data["metadata"] = metadata
 
-        customer_data = await self.formance_repo.update_customer(
-            customer_id, update_data
-        )
+        customer_data = await self.formance_repo.update_customer(customer_id, update_data)
 
         return Customer(**customer_data)
 
     async def update_kyc_status(
-        self, customer_id: str, kyc_status: KYCStatus, kyc_data: Optional[dict] = None
+        self, customer_id: str, kyc_status: KYCStatus, kyc_data: dict | None = None
     ) -> Customer:
         """
         Update customer KYC status
@@ -181,9 +177,7 @@ class CustomerService:
         customer = await self.get_customer(customer_id)
 
         if customer.kyc_status != KYCStatus.VERIFIED:
-            raise KYCRequiredError(
-                f"Customer {customer_id} KYC status: {customer.kyc_status}"
-            )
+            raise KYCRequiredError(f"Customer {customer_id} KYC status: {customer.kyc_status}")
 
         return True
 

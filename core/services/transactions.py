@@ -2,19 +2,15 @@
 Transaction processing service
 """
 
-from typing import Optional
-from decimal import Decimal
-from datetime import datetime
 import logging
+from decimal import Decimal
 
-from ..models.transaction import Transaction, TransactionType, TransactionStatus
-from ..repositories.formance import FormanceRepository
 from ..exceptions import (
-    InsufficientFundsError,
-    TransactionLimitExceeded,
     AccountNotFoundError,
+    InsufficientFundsError,
 )
-
+from ..models.transaction import Transaction, TransactionType
+from ..repositories.formance import FormanceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +25,12 @@ class TransactionService:
     async def create_transaction(
         self,
         transaction_type: TransactionType,
-        from_account_id: Optional[str],
-        to_account_id: Optional[str],
+        from_account_id: str | None,
+        to_account_id: str | None,
         amount: Decimal,
         currency: str = "USD",
-        description: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        description: str | None = None,
+        metadata: dict | None = None,
     ) -> Transaction:
         """
         Create a new transaction
@@ -55,9 +51,7 @@ class TransactionService:
             InsufficientFundsError: If source account has insufficient funds
             AccountNotFoundError: If account doesn't exist
         """
-        logger.info(
-            f"Processing {transaction_type} transaction: {amount} {currency}"
-        )
+        logger.info(f"Processing {transaction_type} transaction: {amount} {currency}")
 
         # Validate accounts exist
         if from_account_id:
@@ -130,8 +124,8 @@ class TransactionService:
         to_account_id: str,
         amount: Decimal,
         currency: str = "USD",
-        description: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        description: str | None = None,
+        metadata: dict | None = None,
     ) -> Transaction:
         """
         Deposit funds to an account
@@ -161,8 +155,8 @@ class TransactionService:
         from_account_id: str,
         amount: Decimal,
         currency: str = "USD",
-        description: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        description: str | None = None,
+        metadata: dict | None = None,
     ) -> Transaction:
         """
         Withdraw funds from an account
@@ -193,8 +187,8 @@ class TransactionService:
         to_account_id: str,
         amount: Decimal,
         currency: str = "USD",
-        description: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        description: str | None = None,
+        metadata: dict | None = None,
     ) -> Transaction:
         """
         Transfer funds between accounts
@@ -226,9 +220,7 @@ class TransactionService:
         if not exists:
             raise AccountNotFoundError(f"Account {account_id} not found")
 
-    async def _validate_sufficient_funds(
-        self, account_id: str, amount: Decimal
-    ) -> None:
+    async def _validate_sufficient_funds(self, account_id: str, amount: Decimal) -> None:
         """Validate account has sufficient funds"""
         balance = await self.formance_repo.get_account_balance(account_id)
         if Decimal(str(balance)) < amount:

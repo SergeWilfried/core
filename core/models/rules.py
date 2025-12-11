@@ -5,7 +5,8 @@ Rule engine models for configurable compliance rules
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, Any, Callable
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -81,9 +82,7 @@ class RuleCondition(BaseModel):
     field: str = Field(..., description="Field to evaluate (e.g., 'amount', 'country')")
     operator: RuleConditionOperator = Field(..., description="Comparison operator")
     value: Any = Field(..., description="Value to compare against")
-    value_type: str = Field(
-        default="string", description="Type: string, number, boolean, list"
-    )
+    value_type: str = Field(default="string", description="Type: string, number, boolean, list")
 
     def evaluate(self, context: dict[str, Any]) -> bool:
         """
@@ -103,7 +102,9 @@ class RuleCondition(BaseModel):
         # Convert types for comparison
         compare_value = self.value
         if self.value_type == "number":
-            field_value = float(field_value) if isinstance(field_value, (int, float, Decimal)) else 0
+            field_value = (
+                float(field_value) if isinstance(field_value, int | float | Decimal) else 0
+            )
             compare_value = float(self.value)
         elif self.value_type == "boolean":
             field_value = bool(field_value)
@@ -123,15 +124,20 @@ class RuleCondition(BaseModel):
         elif self.operator == RuleConditionOperator.LESS_THAN_OR_EQUAL:
             return field_value <= compare_value
         elif self.operator == RuleConditionOperator.IN:
-            return field_value in (compare_value if isinstance(compare_value, list) else [compare_value])
+            return field_value in (
+                compare_value if isinstance(compare_value, list) else [compare_value]
+            )
         elif self.operator == RuleConditionOperator.NOT_IN:
-            return field_value not in (compare_value if isinstance(compare_value, list) else [compare_value])
+            return field_value not in (
+                compare_value if isinstance(compare_value, list) else [compare_value]
+            )
         elif self.operator == RuleConditionOperator.CONTAINS:
             return compare_value in str(field_value)
         elif self.operator == RuleConditionOperator.NOT_CONTAINS:
             return compare_value not in str(field_value)
         elif self.operator == RuleConditionOperator.MATCHES_REGEX:
             import re
+
             return bool(re.match(compare_value, str(field_value)))
         elif self.operator == RuleConditionOperator.BETWEEN:
             if isinstance(compare_value, list) and len(compare_value) == 2:
@@ -145,9 +151,7 @@ class ComplianceRule(BaseModel):
     """Configurable compliance rule"""
 
     id: str = Field(..., description="Unique rule ID")
-    organization_id: Optional[str] = Field(
-        None, description="Organization ID (None for global rules)"
-    )
+    organization_id: str | None = Field(None, description="Organization ID (None for global rules)")
 
     # Rule identification
     name: str = Field(..., description="Rule name")
@@ -155,9 +159,7 @@ class ComplianceRule(BaseModel):
     rule_type: RuleType = Field(..., description="Type of rule")
 
     # Scope
-    scope: RuleScope = Field(
-        default=RuleScope.ORGANIZATION, description="Rule scope"
-    )
+    scope: RuleScope = Field(default=RuleScope.ORGANIZATION, description="Rule scope")
     applies_to: list[str] = Field(
         default_factory=list,
         description="Specific IDs this rule applies to (customers, accounts, etc.)",
@@ -179,12 +181,8 @@ class ComplianceRule(BaseModel):
     )
 
     # Configuration
-    message: Optional[str] = Field(
-        None, description="Message to display when rule triggers"
-    )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional rule metadata"
-    )
+    message: str | None = Field(None, description="Message to display when rule triggers")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional rule metadata")
 
     # Status
     enabled: bool = Field(default=True, description="Whether rule is active")
@@ -196,12 +194,8 @@ class ComplianceRule(BaseModel):
     created_at: datetime = Field(
         default_factory=datetime.utcnow, description="When rule was created"
     )
-    updated_at: Optional[datetime] = Field(
-        None, description="When rule was last updated"
-    )
-    created_by: Optional[str] = Field(
-        None, description="User who created rule"
-    )
+    updated_at: datetime | None = Field(None, description="When rule was last updated")
+    created_by: str | None = Field(None, description="User who created rule")
 
     def evaluate(self, context: dict[str, Any]) -> bool:
         """
@@ -230,7 +224,7 @@ class ComplianceRule(BaseModel):
 
         return False
 
-    def should_apply_to(self, target_id: Optional[str] = None) -> bool:
+    def should_apply_to(self, target_id: str | None = None) -> bool:
         """
         Check if rule should apply to target
 
@@ -264,32 +258,24 @@ class RuleEvaluationResult(BaseModel):
     rule_id: str = Field(..., description="Rule that was evaluated")
     rule_name: str = Field(..., description="Rule name")
     triggered: bool = Field(..., description="Whether rule triggered")
-    action: Optional[RuleAction] = Field(None, description="Action to take")
-    severity: Optional[RuleSeverity] = Field(None, description="Severity")
-    message: Optional[str] = Field(None, description="Message")
+    action: RuleAction | None = Field(None, description="Action to take")
+    severity: RuleSeverity | None = Field(None, description="Severity")
+    message: str | None = Field(None, description="Message")
     risk_score_impact: int = Field(default=0, description="Risk score impact")
-    context: dict[str, Any] = Field(
-        default_factory=dict, description="Evaluation context"
-    )
-    evaluated_at: datetime = Field(
-        default_factory=datetime.utcnow, description="When evaluated"
-    )
+    context: dict[str, Any] = Field(default_factory=dict, description="Evaluation context")
+    evaluated_at: datetime = Field(default_factory=datetime.utcnow, description="When evaluated")
 
 
 class RuleSet(BaseModel):
     """Collection of rules for a specific purpose"""
 
     id: str = Field(..., description="Rule set ID")
-    organization_id: Optional[str] = Field(
-        None, description="Organization ID (None for global)"
-    )
+    organization_id: str | None = Field(None, description="Organization ID (None for global)")
     name: str = Field(..., description="Rule set name")
     description: str = Field(..., description="Rule set description")
 
     # Rules
-    rule_ids: list[str] = Field(
-        default_factory=list, description="Rules in this set"
-    )
+    rule_ids: list[str] = Field(default_factory=list, description="Rules in this set")
 
     # Configuration
     enabled: bool = Field(default=True, description="Whether rule set is active")
@@ -301,15 +287,11 @@ class RuleSet(BaseModel):
     )
 
     # Timestamps
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="When created"
-    )
-    updated_at: Optional[datetime] = Field(None, description="When updated")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="When created")
+    updated_at: datetime | None = Field(None, description="When updated")
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class RuleTemplate(BaseModel):
@@ -319,14 +301,10 @@ class RuleTemplate(BaseModel):
     name: str = Field(..., description="Template name")
     description: str = Field(..., description="Template description")
     rule_type: RuleType = Field(..., description="Rule type")
-    category: str = Field(
-        ..., description="Category: kyc, aml, sanctions, velocity, etc."
-    )
+    category: str = Field(..., description="Category: kyc, aml, sanctions, velocity, etc.")
 
     # Template configuration
-    default_conditions: list[dict] = Field(
-        default_factory=list, description="Default conditions"
-    )
+    default_conditions: list[dict] = Field(default_factory=list, description="Default conditions")
     default_action: RuleAction = Field(..., description="Default action")
     default_severity: RuleSeverity = Field(..., description="Default severity")
 
@@ -336,15 +314,11 @@ class RuleTemplate(BaseModel):
     )
 
     # Usage
-    usage_count: int = Field(
-        default=0, description="How many times template was used"
-    )
+    usage_count: int = Field(default=0, description="How many times template was used")
 
     # Metadata
     tags: list[str] = Field(default_factory=list, description="Template tags")
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 # Pre-built rule templates

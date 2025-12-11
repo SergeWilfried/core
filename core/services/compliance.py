@@ -13,36 +13,30 @@ import logging
 import secrets
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Optional
 
-from ..models.compliance import (
-    ComplianceCheck,
-    ComplianceCheckType,
-    ComplianceStatus,
-    RiskLevel,
-    RiskScore,
-    SanctionMatch,
-    SanctionListType,
-    VelocityCheck,
-    ComplianceAlert,
-)
-from ..models.rules import (
-    ComplianceRule,
-    RuleAction,
-    RuleEvaluationResult,
-    RuleSeverity,
-    RuleType,
-)
-from ..models.customer import Customer, KYCStatus
-from ..models.organization import Organization, OrganizationSettings
-from ..models.payment import PaymentMethod, MobileMoneyProvider
-from ..utils.sanctions import sanctions_screening, country_risk_assessment
-from ..repositories.formance import FormanceRepository
 from ..exceptions import (
     ComplianceError,
     KYCRequiredError,
     TransactionBlockedError,
 )
+from ..models.compliance import (
+    ComplianceAlert,
+    ComplianceCheck,
+    ComplianceCheckType,
+    ComplianceStatus,
+    RiskScore,
+    SanctionListType,
+)
+from ..models.customer import Customer
+from ..models.organization import Organization, OrganizationSettings
+from ..models.payment import PaymentMethod
+from ..models.rules import (
+    ComplianceRule,
+    RuleAction,
+    RuleEvaluationResult,
+)
+from ..repositories.formance import FormanceRepository
+from ..utils.sanctions import country_risk_assessment, sanctions_screening
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +68,7 @@ class ComplianceService:
         # In-memory rule cache (in production, use Redis)
         self._rules_cache: dict[str, list[ComplianceRule]] = {}
         self._rules_cache_ttl = timedelta(minutes=15)
-        self._rules_cache_timestamp: Optional[datetime] = None
+        self._rules_cache_timestamp: datetime | None = None
 
     async def check_transaction(
         self,
@@ -84,9 +78,9 @@ class ComplianceService:
         amount: Decimal,
         currency: str,
         transaction_type: str,
-        payment_method: Optional[PaymentMethod] = None,
-        destination_country: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        payment_method: PaymentMethod | None = None,
+        destination_country: str | None = None,
+        metadata: dict | None = None,
     ) -> ComplianceCheck:
         """
         Comprehensive compliance check for transaction
@@ -205,9 +199,7 @@ class ComplianceService:
 
             # 5. Geographic Risk Check
             if destination_country:
-                geo_result = await self._check_geographic_risk(
-                    destination_country, org.settings
-                )
+                geo_result = await self._check_geographic_risk(destination_country, org.settings)
                 compliance_check.rules_evaluated.append("geographic_risk")
                 if geo_result["blocked"]:
                     compliance_check.status = ComplianceStatus.BLOCKED
@@ -217,19 +209,17 @@ class ComplianceService:
 
             # 6. Evaluate Custom Rules
             rules_result = await self._evaluate_rules(organization_id, context)
-            compliance_check.rules_evaluated.extend(
-                [r.rule_id for r in rules_result]
-            )
-            compliance_check.rules_triggered = [
-                r.rule_id for r in rules_result if r.triggered
-            ]
+            compliance_check.rules_evaluated.extend([r.rule_id for r in rules_result])
+            compliance_check.rules_triggered = [r.rule_id for r in rules_result if r.triggered]
 
             # Check for blocking rules
             for result in rules_result:
                 if result.triggered and result.action == RuleAction.BLOCK:
                     compliance_check.status = ComplianceStatus.BLOCKED
                     compliance_check.reason = result.message or f"Rule {result.rule_name} triggered"
-                    compliance_check.risk_score = min(compliance_check.risk_score + result.risk_score_impact, 100)
+                    compliance_check.risk_score = min(
+                        compliance_check.risk_score + result.risk_score_impact, 100
+                    )
                     raise TransactionBlockedError(compliance_check.reason)
 
             # Check for review requirements
@@ -237,7 +227,9 @@ class ComplianceService:
                 if result.triggered and result.action == RuleAction.REVIEW:
                     compliance_check.requires_manual_review = True
                     compliance_check.status = ComplianceStatus.REVIEW
-                    compliance_check.reason = result.message or f"Manual review required: {result.rule_name}"
+                    compliance_check.reason = (
+                        result.message or f"Manual review required: {result.rule_name}"
+                    )
 
             # 7. Calculate Risk Score
             risk_score_data = await self._calculate_risk_score(
@@ -274,7 +266,7 @@ class ComplianceService:
 
             return compliance_check
 
-        except (TransactionBlockedError, KYCRequiredError) as e:
+        except (TransactionBlockedError, KYCRequiredError):
             # Store failed check
             # await self.repository.create_compliance_check(compliance_check)
             raise
@@ -284,9 +276,7 @@ class ComplianceService:
             compliance_check.reason = f"Compliance check error: {str(e)}"
             raise ComplianceError(f"Compliance check failed: {e}")
 
-    async def _check_kyc_verification(
-        self, customer: Customer, org: Organization
-    ) -> dict:
+    async def _check_kyc_verification(self, customer: Customer, org: Organization) -> dict:
         """Check KYC/KYB verification status"""
         # Check customer KYC
         if not customer.is_active():
@@ -340,8 +330,8 @@ class ComplianceService:
         settings: OrganizationSettings,
         amount: Decimal,
         currency: str,
-        payment_method: Optional[PaymentMethod],
-        destination_country: Optional[str],
+        payment_method: PaymentMethod | None,
+        destination_country: str | None,
     ) -> dict:
         """Check transaction against organization settings"""
         # Check currency allowed
@@ -352,20 +342,14 @@ class ComplianceService:
             }
 
         # Check transaction amount limit
-        if (
-            settings.max_transaction_amount
-            and amount > settings.max_transaction_amount
-        ):
+        if settings.max_transaction_amount and amount > settings.max_transaction_amount:
             return {
                 "blocked": True,
                 "reason": f"Amount exceeds organization limit of {settings.max_transaction_amount}",
             }
 
         # Check mobile money allowed
-        if (
-            payment_method == PaymentMethod.MOBILE_MONEY
-            and not settings.allow_mobile_money
-        ):
+        if payment_method == PaymentMethod.MOBILE_MONEY and not settings.allow_mobile_money:
             return {
                 "blocked": True,
                 "reason": "Mobile money payments not enabled for organization",
@@ -379,10 +363,7 @@ class ComplianceService:
             }
 
         # Check restricted countries
-        if (
-            destination_country
-            and destination_country in settings.restricted_countries
-        ):
+        if destination_country and destination_country in settings.restricted_countries:
             return {
                 "blocked": True,
                 "reason": f"Transactions to {destination_country} are blocked",
@@ -469,9 +450,7 @@ class ComplianceService:
             results.append(result)
 
             if triggered:
-                logger.info(
-                    f"Rule {rule.name} triggered for customer {context.get('customer_id')}"
-                )
+                logger.info(f"Rule {rule.name} triggered for customer {context.get('customer_id')}")
 
         return results
 
@@ -500,7 +479,7 @@ class ComplianceService:
         context: dict,
         sanctions_result: dict,
         velocity_result: dict,
-        destination_country: Optional[str],
+        destination_country: str | None,
     ) -> dict:
         """Calculate comprehensive risk score"""
         # Component scores (0-100)
@@ -518,9 +497,7 @@ class ComplianceService:
 
         geographic_score = 0
         if destination_country:
-            geographic_score = self.country_risk.get_country_risk_score(
-                destination_country
-            )
+            geographic_score = self.country_risk.get_country_risk_score(destination_country)
 
         velocity_score = 20 if velocity_result.get("blocked") else 0
 
@@ -561,9 +538,7 @@ class ComplianceService:
 
         return factors
 
-    async def create_rule(
-        self, organization_id: str, rule: ComplianceRule
-    ) -> ComplianceRule:
+    async def create_rule(self, organization_id: str, rule: ComplianceRule) -> ComplianceRule:
         """
         Create new compliance rule
 
@@ -582,13 +557,13 @@ class ComplianceService:
 
         return rule
 
-    async def get_compliance_check(self, check_id: str) -> Optional[ComplianceCheck]:
+    async def get_compliance_check(self, check_id: str) -> ComplianceCheck | None:
         """Get compliance check by ID"""
         # TODO: Retrieve from database
         return None
 
     async def approve_manual_review(
-        self, check_id: str, reviewed_by: str, notes: Optional[str] = None
+        self, check_id: str, reviewed_by: str, notes: str | None = None
     ) -> ComplianceCheck:
         """Approve a compliance check requiring manual review"""
         # TODO: Update in database
@@ -609,7 +584,7 @@ class ComplianceService:
         compliance_check: ComplianceCheck,
         transaction_amount: Decimal,
         transaction_date: datetime,
-        alert: Optional[ComplianceAlert] = None,
+        alert: ComplianceAlert | None = None,
     ) -> dict:
         """
         Check if regulatory reporting is required
@@ -650,9 +625,7 @@ class ComplianceService:
 
             if ctr_required:
                 result["ctr_required"] = True
-                result["reasons"].append(
-                    f"Currency transaction exceeds reporting threshold"
-                )
+                result["reasons"].append("Currency transaction exceeds reporting threshold")
 
         # Check SAR requirement
         sar_required = await regulatory_service.check_sar_required(
@@ -663,9 +636,7 @@ class ComplianceService:
 
         if sar_required:
             result["sar_required"] = True
-            result["reasons"].append(
-                "Suspicious activity detected - SAR filing may be required"
-            )
+            result["reasons"].append("Suspicious activity detected - SAR filing may be required")
 
         if result["ctr_required"] or result["sar_required"]:
             logger.warning(

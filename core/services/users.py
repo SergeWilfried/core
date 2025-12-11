@@ -2,16 +2,14 @@
 User management and authentication service
 """
 
-from typing import Optional
-from datetime import datetime, timedelta
-import logging
 import hashlib
+import logging
 import secrets
+from datetime import datetime, timedelta
 
-from ..models.user import User, UserRole, UserStatus, Permission, UserSession
-from ..repositories.formance import FormanceRepository
 from ..exceptions import ValidationError
-
+from ..models.user import Permission, User, UserRole, UserSession, UserStatus
+from ..repositories.formance import FormanceRepository
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +44,11 @@ class UserService:
         first_name: str,
         last_name: str,
         role: UserRole,
-        password: Optional[str] = None,
-        phone: Optional[str] = None,
-        permissions: Optional[list[Permission]] = None,
-        created_by: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        password: str | None = None,
+        phone: str | None = None,
+        permissions: list[Permission] | None = None,
+        created_by: str | None = None,
+        metadata: dict | None = None,
     ) -> User:
         """
         Create a new user
@@ -105,9 +103,7 @@ class UserService:
         user_data = await self.formance_repo.get_user(user_id)
         return User(**user_data)
 
-    async def get_user_by_email(
-        self, email: str, organization_id: Optional[str] = None
-    ) -> User:
+    async def get_user_by_email(self, email: str, organization_id: str | None = None) -> User:
         """
         Get user by email
 
@@ -184,8 +180,8 @@ class UserService:
         organization_id: str,
         limit: int = 50,
         offset: int = 0,
-        status: Optional[UserStatus] = None,
-        role: Optional[UserRole] = None,
+        status: UserStatus | None = None,
+        role: UserRole | None = None,
     ) -> list[User]:
         """
         List users in an organization
@@ -286,7 +282,7 @@ class UserService:
         self,
         email: str,
         password: str,
-        organization_id: Optional[str] = None,
+        organization_id: str | None = None,
     ) -> tuple[User, UserSession]:
         """
         Authenticate user with email and password
@@ -314,9 +310,7 @@ class UserService:
             raise ValidationError(f"User account is {user.status}")
 
         # Verify password
-        if not user.password_hash or not self._verify_password(
-            password, user.password_hash
-        ):
+        if not user.password_hash or not self._verify_password(password, user.password_hash):
             # Increment failed login attempts
             await self.update_user(
                 user.id,
@@ -340,8 +334,8 @@ class UserService:
     async def _create_session(
         self,
         user: User,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> UserSession:
         """
         Create a new user session
@@ -407,7 +401,7 @@ class UserService:
         Args:
             token: Session token
         """
-        logger.info(f"Logging out session")
+        logger.info("Logging out session")
         await self.formance_repo.delete_user_session(token)
 
     async def delete_user(self, user_id: str) -> None:

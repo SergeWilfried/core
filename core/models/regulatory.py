@@ -8,7 +8,8 @@ CTR: Currency Transaction Report (for transactions >= $10,000)
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, Any
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -71,28 +72,27 @@ class FinancialInstitution(BaseModel):
     """Financial institution information for regulatory reports"""
 
     name: str = Field(..., description="Institution legal name")
-    ein: Optional[str] = Field(None, description="Employer Identification Number")
-    tin: Optional[str] = Field(None, description="Tax Identification Number")
-    rssd_number: Optional[str] = Field(None, description="RSSD number for US banks")
+    ein: str | None = Field(None, description="Employer Identification Number")
+    tin: str | None = Field(None, description="Tax Identification Number")
+    rssd_number: str | None = Field(None, description="RSSD number for US banks")
 
     # Address
     address_street: str = Field(..., description="Street address")
     address_city: str = Field(..., description="City")
-    address_state: Optional[str] = Field(None, description="State/Province")
+    address_state: str | None = Field(None, description="State/Province")
     address_postal_code: str = Field(..., description="Postal code")
     address_country: str = Field(..., description="Country code (ISO 3166-1 alpha-2)")
 
     # Contact
     phone: str = Field(..., description="Primary phone number")
-    email: Optional[str] = Field(None, description="Contact email")
+    email: str | None = Field(None, description="Contact email")
 
     # Regulatory identifiers
-    primary_federal_regulator: Optional[str] = Field(
+    primary_federal_regulator: str | None = Field(
         None, description="Primary regulator (e.g., OCC, FDIC, FRB)"
     )
     type_of_filing_institution: str = Field(
-        default="other",
-        description="Type: bank, credit_union, money_service_business, etc."
+        default="other", description="Type: bank, credit_union, money_service_business, etc."
     )
 
 
@@ -100,39 +100,37 @@ class SubjectInformation(BaseModel):
     """Subject (person or entity) information for reports"""
 
     # Identity
-    entity_type: str = Field(
-        ..., description="Type: individual, entity, unknown"
-    )
+    entity_type: str = Field(..., description="Type: individual, entity, unknown")
 
     # Individual information
-    first_name: Optional[str] = Field(None, description="First name")
-    middle_name: Optional[str] = Field(None, description="Middle name")
-    last_name: Optional[str] = Field(None, description="Last name")
-    date_of_birth: Optional[datetime] = Field(None, description="Date of birth")
-    ssn: Optional[str] = Field(None, description="Social Security Number")
-    ein: Optional[str] = Field(None, description="Employer Identification Number")
+    first_name: str | None = Field(None, description="First name")
+    middle_name: str | None = Field(None, description="Middle name")
+    last_name: str | None = Field(None, description="Last name")
+    date_of_birth: datetime | None = Field(None, description="Date of birth")
+    ssn: str | None = Field(None, description="Social Security Number")
+    ein: str | None = Field(None, description="Employer Identification Number")
 
     # Entity information
-    entity_name: Optional[str] = Field(None, description="Legal entity name")
-    dba_name: Optional[str] = Field(None, description="Doing Business As name")
+    entity_name: str | None = Field(None, description="Legal entity name")
+    dba_name: str | None = Field(None, description="Doing Business As name")
 
     # Contact
-    phone: Optional[str] = Field(None, description="Phone number")
-    email: Optional[str] = Field(None, description="Email address")
+    phone: str | None = Field(None, description="Phone number")
+    email: str | None = Field(None, description="Email address")
 
     # Address
-    address_street: Optional[str] = Field(None, description="Street address")
-    address_city: Optional[str] = Field(None, description="City")
-    address_state: Optional[str] = Field(None, description="State/Province")
-    address_postal_code: Optional[str] = Field(None, description="Postal code")
-    address_country: Optional[str] = Field(None, description="Country code")
+    address_street: str | None = Field(None, description="Street address")
+    address_city: str | None = Field(None, description="City")
+    address_state: str | None = Field(None, description="State/Province")
+    address_postal_code: str | None = Field(None, description="Postal code")
+    address_country: str | None = Field(None, description="Country code")
 
     # Identification documents
-    identification_type: Optional[str] = Field(
+    identification_type: str | None = Field(
         None, description="ID type: passport, drivers_license, national_id"
     )
-    identification_number: Optional[str] = Field(None, description="ID number")
-    identification_country: Optional[str] = Field(None, description="Issuing country")
+    identification_number: str | None = Field(None, description="ID number")
+    identification_country: str | None = Field(None, description="Issuing country")
 
     # Account information
     account_numbers: list[str] = Field(
@@ -140,22 +138,18 @@ class SubjectInformation(BaseModel):
     )
 
     # Relationship to institution
-    relationship: Optional[str] = Field(
+    relationship: str | None = Field(
         None, description="Relationship: customer, employee, agent, other"
     )
 
     # Occupation/Business
-    occupation: Optional[str] = Field(None, description="Occupation or business type")
-    employer: Optional[str] = Field(None, description="Employer name")
+    occupation: str | None = Field(None, description="Occupation or business type")
+    employer: str | None = Field(None, description="Employer name")
 
     # Risk indicators
-    is_politically_exposed: bool = Field(
-        default=False, description="Whether subject is a PEP"
-    )
+    is_politically_exposed: bool = Field(default=False, description="Whether subject is a PEP")
 
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class TransactionDetails(BaseModel):
@@ -170,31 +164,29 @@ class TransactionDetails(BaseModel):
     currency: str = Field(default="USD", description="Currency code")
 
     # Accounts involved
-    from_account_number: Optional[str] = Field(None, description="Source account")
-    to_account_number: Optional[str] = Field(None, description="Destination account")
+    from_account_number: str | None = Field(None, description="Source account")
+    to_account_number: str | None = Field(None, description="Destination account")
 
     # Location
-    branch_id: Optional[str] = Field(None, description="Branch ID")
-    branch_name: Optional[str] = Field(None, description="Branch name")
+    branch_id: str | None = Field(None, description="Branch ID")
+    branch_name: str | None = Field(None, description="Branch name")
 
     # Method
-    payment_method: Optional[str] = Field(None, description="Payment method")
-    payment_instrument: Optional[str] = Field(
+    payment_method: str | None = Field(None, description="Payment method")
+    payment_instrument: str | None = Field(
         None, description="Instrument: cash, check, wire, ach, card, mobile_money"
     )
 
     # Additional details
-    description: Optional[str] = Field(None, description="Transaction description")
-    reference_number: Optional[str] = Field(None, description="Reference number")
+    description: str | None = Field(None, description="Transaction description")
+    reference_number: str | None = Field(None, description="Reference number")
 
     # Related transactions
     related_transaction_ids: list[str] = Field(
         default_factory=list, description="Related transaction IDs"
     )
 
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class SuspiciousActivityReport(BaseModel):
@@ -211,9 +203,7 @@ class SuspiciousActivityReport(BaseModel):
     organization_id: str = Field(..., description="Organization ID")
     report_type: ReportType = Field(default=ReportType.SAR, description="Report type")
     status: ReportStatus = Field(default=ReportStatus.DRAFT, description="Filing status")
-    priority: ReportPriority = Field(
-        default=ReportPriority.NORMAL, description="Report priority"
-    )
+    priority: ReportPriority = Field(default=ReportPriority.NORMAL, description="Report priority")
 
     # Filing institution
     filing_institution: FinancialInstitution = Field(
@@ -222,12 +212,10 @@ class SuspiciousActivityReport(BaseModel):
 
     # Activity information
     activity_start_date: datetime = Field(..., description="Start date of suspicious activity")
-    activity_end_date: Optional[datetime] = Field(
+    activity_end_date: datetime | None = Field(
         None, description="End date if ongoing or multiple instances"
     )
-    activity_detected_date: datetime = Field(
-        ..., description="When activity was detected"
-    )
+    activity_detected_date: datetime = Field(..., description="When activity was detected")
 
     # Subject(s) involved
     subjects: list[SubjectInformation] = Field(
@@ -240,9 +228,7 @@ class SuspiciousActivityReport(BaseModel):
     )
 
     # Transaction details
-    transactions: list[TransactionDetails] = Field(
-        ..., description="Transactions involved"
-    )
+    transactions: list[TransactionDetails] = Field(..., description="Transactions involved")
 
     # Total amounts
     total_amount: Decimal = Field(..., description="Total amount involved")
@@ -250,30 +236,20 @@ class SuspiciousActivityReport(BaseModel):
 
     # Narrative
     narrative_summary: str = Field(
-        ...,
-        min_length=50,
-        description="Detailed narrative explaining the suspicious activity"
+        ..., min_length=50, description="Detailed narrative explaining the suspicious activity"
     )
 
     # Supporting information
-    ip_addresses: list[str] = Field(
-        default_factory=list, description="IP addresses involved"
-    )
-    email_addresses: list[str] = Field(
-        default_factory=list, description="Email addresses involved"
-    )
-    phone_numbers: list[str] = Field(
-        default_factory=list, description="Phone numbers involved"
-    )
+    ip_addresses: list[str] = Field(default_factory=list, description="IP addresses involved")
+    email_addresses: list[str] = Field(default_factory=list, description="Email addresses involved")
+    phone_numbers: list[str] = Field(default_factory=list, description="Phone numbers involved")
 
     # Law enforcement
     law_enforcement_contacted: bool = Field(
         default=False, description="Whether law enforcement was contacted"
     )
-    law_enforcement_agency: Optional[str] = Field(
-        None, description="Law enforcement agency name"
-    )
-    law_enforcement_contact_date: Optional[datetime] = Field(
+    law_enforcement_agency: str | None = Field(None, description="Law enforcement agency name")
+    law_enforcement_contact_date: datetime | None = Field(
         None, description="Date law enforcement was contacted"
     )
 
@@ -281,40 +257,30 @@ class SuspiciousActivityReport(BaseModel):
     compliance_check_ids: list[str] = Field(
         default_factory=list, description="Related compliance check IDs"
     )
-    alert_ids: list[str] = Field(
-        default_factory=list, description="Related alert IDs"
-    )
+    alert_ids: list[str] = Field(default_factory=list, description="Related alert IDs")
 
     # Filing information
     prepared_by: str = Field(..., description="User ID who prepared report")
-    reviewed_by: Optional[str] = Field(None, description="User ID who reviewed")
-    approved_by: Optional[str] = Field(None, description="User ID who approved")
-    filed_by: Optional[str] = Field(None, description="User ID who filed")
+    reviewed_by: str | None = Field(None, description="User ID who reviewed")
+    approved_by: str | None = Field(None, description="User ID who approved")
+    filed_by: str | None = Field(None, description="User ID who filed")
 
     # Timestamps
     created_at: datetime = Field(
         default_factory=datetime.utcnow, description="When report was created"
     )
-    reviewed_at: Optional[datetime] = Field(None, description="Review timestamp")
-    approved_at: Optional[datetime] = Field(None, description="Approval timestamp")
-    filed_at: Optional[datetime] = Field(None, description="Filing timestamp")
+    reviewed_at: datetime | None = Field(None, description="Review timestamp")
+    approved_at: datetime | None = Field(None, description="Approval timestamp")
+    filed_at: datetime | None = Field(None, description="Filing timestamp")
 
     # Regulatory submission
-    bsa_identifier: Optional[str] = Field(
-        None, description="BSA E-Filing System identifier"
-    )
-    fincen_ack_number: Optional[str] = Field(
-        None, description="FinCEN acknowledgment number"
-    )
+    bsa_identifier: str | None = Field(None, description="BSA E-Filing System identifier")
+    fincen_ack_number: str | None = Field(None, description="FinCEN acknowledgment number")
 
     # Amendment information
     is_amendment: bool = Field(default=False, description="Is this an amendment")
-    prior_report_id: Optional[str] = Field(
-        None, description="ID of report being amended"
-    )
-    prior_bsa_identifier: Optional[str] = Field(
-        None, description="Prior BSA identifier"
-    )
+    prior_report_id: str | None = Field(None, description="ID of report being amended")
+    prior_bsa_identifier: str | None = Field(None, description="Prior BSA identifier")
 
     # Attachments
     attachment_urls: list[str] = Field(
@@ -322,9 +288,7 @@ class SuspiciousActivityReport(BaseModel):
     )
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class CurrencyTransactionReport(BaseModel):
@@ -355,35 +319,27 @@ class CurrencyTransactionReport(BaseModel):
     )
 
     # Person(s) conducting transaction (if different)
-    person_conducting: Optional[SubjectInformation] = Field(
+    person_conducting: SubjectInformation | None = Field(
         None, description="Person physically conducting transaction"
     )
 
     # Transaction details
-    transactions: list[TransactionDetails] = Field(
-        ..., description="Currency transactions"
-    )
+    transactions: list[TransactionDetails] = Field(..., description="Currency transactions")
 
     # Total amounts (separate for cash in/out)
-    total_cash_in: Decimal = Field(
-        default=Decimal("0"), description="Total cash received"
-    )
-    total_cash_out: Decimal = Field(
-        default=Decimal("0"), description="Total cash paid out"
-    )
+    total_cash_in: Decimal = Field(default=Decimal("0"), description="Total cash received")
+    total_cash_out: Decimal = Field(default=Decimal("0"), description="Total cash paid out")
     total_amount: Decimal = Field(..., description="Total amount (in + out)")
     currency: str = Field(default="USD", description="Currency")
 
     # Transaction type
     transaction_type: str = Field(
-        ...,
-        description="Type: deposit, withdrawal, exchange, payment, other"
+        ..., description="Type: deposit, withdrawal, exchange, payment, other"
     )
 
     # Multiple transactions
     multiple_transactions: bool = Field(
-        default=False,
-        description="Multiple transactions aggregated"
+        default=False, description="Multiple transactions aggregated"
     )
 
     # Branch/location information
@@ -391,29 +347,19 @@ class CurrencyTransactionReport(BaseModel):
     branch_name: str = Field(..., description="Branch name")
 
     # Armored car service
-    armored_car_service: bool = Field(
-        default=False, description="Involved armored car service"
-    )
-    armored_car_company: Optional[str] = Field(
-        None, description="Armored car company name"
-    )
+    armored_car_service: bool = Field(default=False, description="Involved armored car service")
+    armored_car_company: str | None = Field(None, description="Armored car company name")
 
     # ATM involvement
     atm_involved: bool = Field(default=False, description="ATM involved")
-    atm_location: Optional[str] = Field(None, description="ATM location")
+    atm_location: str | None = Field(None, description="ATM location")
 
     # Account information
-    account_numbers: list[str] = Field(
-        default_factory=list, description="Account numbers involved"
-    )
+    account_numbers: list[str] = Field(default_factory=list, description="Account numbers involved")
 
     # Verification
-    identification_verified: bool = Field(
-        default=False, description="Identification was verified"
-    )
-    verification_method: Optional[str] = Field(
-        None, description="Method of verification"
-    )
+    identification_verified: bool = Field(default=False, description="Identification was verified")
+    verification_method: str | None = Field(None, description="Method of verification")
 
     # Internal tracking
     compliance_check_ids: list[str] = Field(
@@ -422,41 +368,31 @@ class CurrencyTransactionReport(BaseModel):
 
     # Filing information
     prepared_by: str = Field(..., description="User ID who prepared report")
-    reviewed_by: Optional[str] = Field(None, description="User ID who reviewed")
-    filed_by: Optional[str] = Field(None, description="User ID who filed")
+    reviewed_by: str | None = Field(None, description="User ID who reviewed")
+    filed_by: str | None = Field(None, description="User ID who filed")
 
     # Timestamps
     created_at: datetime = Field(
         default_factory=datetime.utcnow, description="When report was created"
     )
-    reviewed_at: Optional[datetime] = Field(None, description="Review timestamp")
-    filed_at: Optional[datetime] = Field(None, description="Filing timestamp")
+    reviewed_at: datetime | None = Field(None, description="Review timestamp")
+    filed_at: datetime | None = Field(None, description="Filing timestamp")
 
     # Regulatory submission
-    bsa_identifier: Optional[str] = Field(
-        None, description="BSA E-Filing System identifier"
-    )
-    fincen_ack_number: Optional[str] = Field(
-        None, description="FinCEN acknowledgment number"
-    )
+    bsa_identifier: str | None = Field(None, description="BSA E-Filing System identifier")
+    fincen_ack_number: str | None = Field(None, description="FinCEN acknowledgment number")
 
     # Amendment information
     is_amendment: bool = Field(default=False, description="Is this an amendment")
-    prior_report_id: Optional[str] = Field(
-        None, description="ID of report being amended"
-    )
-    prior_bsa_identifier: Optional[str] = Field(
-        None, description="Prior BSA identifier"
-    )
+    prior_report_id: str | None = Field(None, description="ID of report being amended")
+    prior_bsa_identifier: str | None = Field(None, description="Prior BSA identifier")
 
     # Exemption
     is_exempt: bool = Field(default=False, description="Transaction exempt from reporting")
-    exemption_type: Optional[str] = Field(None, description="Type of exemption")
+    exemption_type: str | None = Field(None, description="Type of exemption")
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class RegulatoryReportSummary(BaseModel):
@@ -466,25 +402,25 @@ class RegulatoryReportSummary(BaseModel):
     organization_id: str = Field(..., description="Organization ID")
     report_type: ReportType = Field(..., description="Report type")
     status: ReportStatus = Field(..., description="Filing status")
-    priority: Optional[ReportPriority] = Field(None, description="Priority")
+    priority: ReportPriority | None = Field(None, description="Priority")
 
     # Key amounts
     total_amount: Decimal = Field(..., description="Total amount")
     currency: str = Field(..., description="Currency")
 
     # Key dates
-    transaction_date: Optional[datetime] = Field(None, description="Transaction date")
-    activity_start_date: Optional[datetime] = Field(None, description="Activity start")
+    transaction_date: datetime | None = Field(None, description="Transaction date")
+    activity_start_date: datetime | None = Field(None, description="Activity start")
     created_at: datetime = Field(..., description="Creation timestamp")
-    filed_at: Optional[datetime] = Field(None, description="Filing timestamp")
+    filed_at: datetime | None = Field(None, description="Filing timestamp")
 
     # Key people
     prepared_by: str = Field(..., description="Preparer user ID")
-    filed_by: Optional[str] = Field(None, description="Filer user ID")
+    filed_by: str | None = Field(None, description="Filer user ID")
 
     # Regulatory submission
-    bsa_identifier: Optional[str] = Field(None, description="BSA identifier")
-    fincen_ack_number: Optional[str] = Field(None, description="FinCEN ack number")
+    bsa_identifier: str | None = Field(None, description="BSA identifier")
+    fincen_ack_number: str | None = Field(None, description="FinCEN ack number")
 
     # Counts
     subject_count: int = Field(default=0, description="Number of subjects")
@@ -499,12 +435,9 @@ class RegulatoryReportingConfig(BaseModel):
     # CTR configuration
     ctr_enabled: bool = Field(default=True, description="Enable CTR reporting")
     ctr_threshold: Decimal = Field(
-        default=Decimal("10000.00"),
-        description="CTR reporting threshold"
+        default=Decimal("10000.00"), description="CTR reporting threshold"
     )
-    ctr_auto_generate: bool = Field(
-        default=True, description="Automatically generate CTRs"
-    )
+    ctr_auto_generate: bool = Field(default=True, description="Automatically generate CTRs")
     ctr_aggregation_window_hours: int = Field(
         default=24, description="Hours to aggregate transactions"
     )
@@ -512,12 +445,10 @@ class RegulatoryReportingConfig(BaseModel):
     # SAR configuration
     sar_enabled: bool = Field(default=True, description="Enable SAR reporting")
     sar_auto_generate: bool = Field(
-        default=False,
-        description="Automatically generate SARs (requires manual review)"
+        default=False, description="Automatically generate SARs (requires manual review)"
     )
     sar_risk_score_threshold: int = Field(
-        default=75,
-        description="Risk score threshold for auto SAR generation"
+        default=75, description="Risk score threshold for auto SAR generation"
     )
 
     # Filing schedule
@@ -535,9 +466,7 @@ class RegulatoryReportingConfig(BaseModel):
     notification_emails: list[str] = Field(
         default_factory=list, description="Email addresses for notifications"
     )
-    notification_user_ids: list[str] = Field(
-        default_factory=list, description="User IDs to notify"
-    )
+    notification_user_ids: list[str] = Field(default_factory=list, description="User IDs to notify")
 
     # Retention
     report_retention_days: int = Field(
@@ -548,11 +477,7 @@ class RegulatoryReportingConfig(BaseModel):
     fincen_api_enabled: bool = Field(
         default=False, description="Enable FinCEN BSA E-Filing integration"
     )
-    fincen_filing_type: Optional[str] = Field(
-        None, description="FinCEN filing type identifier"
-    )
+    fincen_filing_type: str | None = Field(None, description="FinCEN filing type identifier")
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional configuration"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional configuration")

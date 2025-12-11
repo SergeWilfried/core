@@ -2,19 +2,16 @@
 Organization management service
 """
 
-from typing import Optional
 import logging
 
+from ..models.branch import BranchType
 from ..models.organization import (
     Organization,
-    OrganizationType,
-    OrganizationStatus,
     OrganizationSettings,
+    OrganizationStatus,
+    OrganizationType,
 )
-from ..models.branch import BranchType, Branch
 from ..repositories.formance import FormanceRepository
-from ..exceptions import ValidationError
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +28,18 @@ class OrganizationService:
         organization_type: OrganizationType,
         email: str,
         address_country: str,
-        legal_name: Optional[str] = None,
-        phone: Optional[str] = None,
-        website: Optional[str] = None,
-        address_street: Optional[str] = None,
-        address_city: Optional[str] = None,
-        address_state: Optional[str] = None,
-        address_postal_code: Optional[str] = None,
-        tax_id: Optional[str] = None,
-        registration_number: Optional[str] = None,
-        settings: Optional[OrganizationSettings] = None,
-        created_by: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        legal_name: str | None = None,
+        phone: str | None = None,
+        website: str | None = None,
+        address_street: str | None = None,
+        address_city: str | None = None,
+        address_state: str | None = None,
+        address_postal_code: str | None = None,
+        tax_id: str | None = None,
+        registration_number: str | None = None,
+        settings: OrganizationSettings | None = None,
+        created_by: str | None = None,
+        metadata: dict | None = None,
     ) -> Organization:
         """
         Create a new organization
@@ -94,6 +91,7 @@ class OrganizationService:
 
         # Auto-create headquarters branch
         from .branches import BranchService
+
         branch_service = BranchService(self.formance_repo)
 
         hq_branch = await branch_service.create_branch(
@@ -145,9 +143,7 @@ class OrganizationService:
         """
         logger.info(f"Updating organization: {organization_id}")
 
-        org_data = await self.formance_repo.update_organization(
-            organization_id, update_data
-        )
+        org_data = await self.formance_repo.update_organization(organization_id, update_data)
 
         return Organization(**org_data)
 
@@ -168,9 +164,7 @@ class OrganizationService:
         """
         logger.info(f"Updating organization {organization_id} status to {status}")
 
-        return await self.update_organization(
-            organization_id, {"status": status.value}
-        )
+        return await self.update_organization(organization_id, {"status": status.value})
 
     async def update_organization_settings(
         self,
@@ -189,9 +183,7 @@ class OrganizationService:
         """
         logger.info(f"Updating organization {organization_id} settings")
 
-        return await self.update_organization(
-            organization_id, {"settings": settings.model_dump()}
-        )
+        return await self.update_organization(organization_id, {"settings": settings.model_dump()})
 
     async def verify_organization(
         self,
@@ -219,7 +211,7 @@ class OrganizationService:
         self,
         limit: int = 50,
         offset: int = 0,
-        status: Optional[OrganizationStatus] = None,
+        status: OrganizationStatus | None = None,
     ) -> list[Organization]:
         """
         List organizations
@@ -248,6 +240,4 @@ class OrganizationService:
         """
         logger.info(f"Deleting organization: {organization_id}")
 
-        await self.update_organization_status(
-            organization_id, OrganizationStatus.CLOSED
-        )
+        await self.update_organization_status(organization_id, OrganizationStatus.CLOSED)

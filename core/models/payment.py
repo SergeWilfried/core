@@ -2,11 +2,11 @@
 Payment domain models
 """
 
-from enum import Enum
-from decimal import Decimal
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from decimal import Decimal
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PaymentMethod(str, Enum):
@@ -60,24 +60,12 @@ class Payment(BaseModel):
     currency: str = Field(default="USD", description="Payment currency")
     payment_method: PaymentMethod = Field(..., description="Payment method")
     destination: str = Field(..., description="Payment destination")
-    status: PaymentStatus = Field(
-        default=PaymentStatus.PENDING, description="Payment status"
-    )
-    description: Optional[str] = Field(
-        default=None, description="Payment description"
-    )
-    reference: Optional[str] = Field(
-        default=None, description="External reference"
-    )
-    transaction_id: Optional[str] = Field(
-        default=None, description="Associated transaction ID"
-    )
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    completed_at: Optional[datetime] = Field(
-        default=None, description="Completion timestamp"
-    )
+    status: PaymentStatus = Field(default=PaymentStatus.PENDING, description="Payment status")
+    description: str | None = Field(default=None, description="Payment description")
+    reference: str | None = Field(default=None, description="External reference")
+    transaction_id: str | None = Field(default=None, description="Associated transaction ID")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    completed_at: datetime | None = Field(default=None, description="Completion timestamp")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
     def is_completed(self) -> bool:

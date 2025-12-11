@@ -2,11 +2,11 @@
 Card domain models
 """
 
-from enum import Enum
-from decimal import Decimal
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from decimal import Decimal
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CardType(str, Enum):
@@ -35,33 +35,15 @@ class Card(BaseModel):
     account_id: str = Field(..., description="Associated account")
     customer_id: str = Field(..., description="Card holder")
     card_type: CardType = Field(..., description="Card type")
-    last_four: Optional[str] = Field(
-        default=None, description="Last 4 digits of card"
-    )
-    brand: Optional[str] = Field(
-        default="VISA", description="Card brand (VISA, MASTERCARD, etc.)"
-    )
-    expiry_month: Optional[int] = Field(
-        default=None, description="Expiry month"
-    )
-    expiry_year: Optional[int] = Field(
-        default=None, description="Expiry year"
-    )
-    status: CardStatus = Field(
-        default=CardStatus.PENDING, description="Card status"
-    )
-    spending_limit: Optional[Decimal] = Field(
-        default=None, description="Daily spending limit"
-    )
-    created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Creation timestamp"
-    )
-    activated_at: Optional[datetime] = Field(
-        default=None, description="Activation timestamp"
-    )
-    cancelled_at: Optional[datetime] = Field(
-        default=None, description="Cancellation timestamp"
-    )
+    last_four: str | None = Field(default=None, description="Last 4 digits of card")
+    brand: str | None = Field(default="VISA", description="Card brand (VISA, MASTERCARD, etc.)")
+    expiry_month: int | None = Field(default=None, description="Expiry month")
+    expiry_year: int | None = Field(default=None, description="Expiry year")
+    status: CardStatus = Field(default=CardStatus.PENDING, description="Card status")
+    spending_limit: Decimal | None = Field(default=None, description="Daily spending limit")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    activated_at: datetime | None = Field(default=None, description="Activation timestamp")
+    cancelled_at: datetime | None = Field(default=None, description="Cancellation timestamp")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
     def is_active(self) -> bool:
@@ -82,7 +64,6 @@ class Card(BaseModel):
             return False
 
         now = datetime.utcnow()
-        return (
-            self.expiry_year < now.year
-            or (self.expiry_year == now.year and self.expiry_month < now.month)
+        return self.expiry_year < now.year or (
+            self.expiry_year == now.year and self.expiry_month < now.month
         )

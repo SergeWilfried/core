@@ -2,15 +2,15 @@
 Customer API endpoints
 """
 
-from typing import Annotated, Optional
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
-from ...models.customer import Customer, CustomerStatus, KYCStatus, Address
+from ...exceptions import CustomerNotFoundError
+from ...models.customer import Address, CustomerStatus, KYCStatus
 from ...services import CustomerService
-from ...exceptions import CustomerNotFoundError, KYCRequiredError
-from ..dependencies import get_customer_service, get_current_user
-
+from ..dependencies import get_current_user, get_customer_service
 
 router = APIRouter(prefix="/customers", tags=["customers"])
 
@@ -20,23 +20,23 @@ class CreateCustomerRequest(BaseModel):
     email: EmailStr = Field(..., description="Customer email")
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")
-    phone: Optional[str] = Field(default=None, description="Phone number")
-    address: Optional[Address] = Field(default=None, description="Address")
+    phone: str | None = Field(default=None, description="Phone number")
+    address: Address | None = Field(default=None, description="Address")
     metadata: dict = Field(default_factory=dict, description="Metadata")
 
 
 class UpdateCustomerRequest(BaseModel):
-    email: Optional[EmailStr] = Field(default=None, description="Email")
-    first_name: Optional[str] = Field(default=None, description="First name")
-    last_name: Optional[str] = Field(default=None, description="Last name")
-    phone: Optional[str] = Field(default=None, description="Phone number")
-    address: Optional[Address] = Field(default=None, description="Address")
-    metadata: Optional[dict] = Field(default=None, description="Metadata")
+    email: EmailStr | None = Field(default=None, description="Email")
+    first_name: str | None = Field(default=None, description="First name")
+    last_name: str | None = Field(default=None, description="Last name")
+    phone: str | None = Field(default=None, description="Phone number")
+    address: Address | None = Field(default=None, description="Address")
+    metadata: dict | None = Field(default=None, description="Metadata")
 
 
 class UpdateKYCRequest(BaseModel):
     kyc_status: KYCStatus = Field(..., description="KYC status")
-    kyc_data: Optional[dict] = Field(default=None, description="KYC data")
+    kyc_data: dict | None = Field(default=None, description="KYC data")
 
 
 class CustomerResponse(BaseModel):
@@ -44,8 +44,8 @@ class CustomerResponse(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    phone: Optional[str]
-    address: Optional[Address]
+    phone: str | None
+    address: Address | None
     status: CustomerStatus
     kyc_status: KYCStatus
 

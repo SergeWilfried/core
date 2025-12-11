@@ -10,23 +10,23 @@ Provides endpoints for:
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
+from ...exceptions import RegulatoryReportError, ValidationError
 from ...models.regulatory import (
-    SuspiciousActivityReport,
     CurrencyTransactionReport,
-    RegulatoryReportSummary,
     RegulatoryReportingConfig,
-    ReportType,
-    ReportStatus,
+    RegulatoryReportSummary,
     ReportPriority,
+    ReportStatus,
+    ReportType,
+    SuspiciousActivityReport,
     SuspiciousActivityType,
 )
-from ...services.regulatory import RegulatoryReportingService
 from ...repositories.formance import FormanceRepository
-from ...exceptions import RegulatoryReportError, ValidationError
+from ...services.regulatory import RegulatoryReportingService
 from ..dependencies import get_formance_repository
 
 router = APIRouter(prefix="/regulatory", tags=["regulatory"])
@@ -37,37 +37,33 @@ class GenerateCTRRequest(BaseModel):
     """Request to generate CTR"""
 
     customer_id: str = Field(..., description="Customer ID")
-    transaction_ids: List[str] = Field(..., description="Transaction IDs")
-    branch_id: Optional[str] = Field(None, description="Branch ID")
+    transaction_ids: list[str] = Field(..., description="Transaction IDs")
+    branch_id: str | None = Field(None, description="Branch ID")
 
 
 class GenerateSARRequest(BaseModel):
     """Request to generate SAR"""
 
     customer_id: str = Field(..., description="Customer ID")
-    suspicious_activity_types: List[SuspiciousActivityType] = Field(
+    suspicious_activity_types: list[SuspiciousActivityType] = Field(
         ..., description="Types of suspicious activity"
     )
     narrative_summary: str = Field(
         ..., min_length=50, description="Detailed narrative (minimum 50 characters)"
     )
-    transaction_ids: List[str] = Field(..., description="Transaction IDs involved")
+    transaction_ids: list[str] = Field(..., description="Transaction IDs involved")
     activity_start_date: datetime = Field(..., description="Activity start date")
-    activity_end_date: Optional[datetime] = Field(None, description="Activity end date")
-    compliance_check_ids: Optional[List[str]] = Field(
-        None, description="Related compliance check IDs"
-    )
-    alert_ids: Optional[List[str]] = Field(None, description="Related alert IDs")
-    priority: ReportPriority = Field(
-        default=ReportPriority.NORMAL, description="Report priority"
-    )
+    activity_end_date: datetime | None = Field(None, description="Activity end date")
+    compliance_check_ids: list[str] | None = Field(None, description="Related compliance check IDs")
+    alert_ids: list[str] | None = Field(None, description="Related alert IDs")
+    priority: ReportPriority = Field(default=ReportPriority.NORMAL, description="Report priority")
 
 
 class ReviewReportRequest(BaseModel):
     """Request to review a report"""
 
     approved: bool = Field(..., description="Whether to approve the report")
-    notes: Optional[str] = Field(None, description="Review notes")
+    notes: str | None = Field(None, description="Review notes")
 
 
 class CheckCTRRequiredRequest(BaseModel):
@@ -85,7 +81,7 @@ class CheckCTRRequiredResponse(BaseModel):
     required: bool = Field(..., description="Whether CTR is required")
     threshold: Decimal = Field(..., description="CTR threshold")
     amount: Decimal = Field(..., description="Transaction amount")
-    reason: Optional[str] = Field(None, description="Reason if required")
+    reason: str | None = Field(None, description="Reason if required")
 
 
 class FileReportResponse(BaseModel):
@@ -94,7 +90,7 @@ class FileReportResponse(BaseModel):
     report_id: str = Field(..., description="Report ID")
     report_type: ReportType = Field(..., description="Report type")
     status: ReportStatus = Field(..., description="New status")
-    bsa_identifier: Optional[str] = Field(None, description="BSA identifier")
+    bsa_identifier: str | None = Field(None, description="BSA identifier")
     filed_at: datetime = Field(..., description="Filing timestamp")
 
 
@@ -228,16 +224,16 @@ async def generate_sar(
 
 @router.get(
     "/reports",
-    response_model=List[RegulatoryReportSummary],
+    response_model=list[RegulatoryReportSummary],
     summary="List reports",
     description="List regulatory reports with optional filters",
 )
 async def list_reports(
     organization_id: str = Query(..., description="Organization ID"),
-    report_type: Optional[ReportType] = Query(None, description="Filter by report type"),
-    status: Optional[ReportStatus] = Query(None, description="Filter by status"),
-    start_date: Optional[datetime] = Query(None, description="Filter by start date"),
-    end_date: Optional[datetime] = Query(None, description="Filter by end date"),
+    report_type: ReportType | None = Query(None, description="Filter by report type"),
+    status: ReportStatus | None = Query(None, description="Filter by status"),
+    start_date: datetime | None = Query(None, description="Filter by start date"),
+    end_date: datetime | None = Query(None, description="Filter by end date"),
     limit: int = Query(100, ge=1, le=500, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Results offset"),
     service: RegulatoryReportingService = Depends(get_regulatory_service),

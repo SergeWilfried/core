@@ -2,30 +2,28 @@
 Compliance API endpoints for KYC/AML and transaction monitoring
 """
 
-from typing import Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from ...services.compliance import ComplianceService
+from ...exceptions import ComplianceError, KYCRequiredError, TransactionBlockedError
 from ...models.compliance import (
     ComplianceCheck,
     ComplianceStatus,
     RiskLevel,
-    ComplianceCheckType,
-)
-from ...models.rules import (
-    ComplianceRule,
-    RuleType,
-    RuleAction,
-    RuleSeverity,
-    RuleCondition,
 )
 from ...models.payment import PaymentMethod
-from ...exceptions import ComplianceError, TransactionBlockedError, KYCRequiredError
-from ..dependencies import get_formance_client
+from ...models.rules import (
+    ComplianceRule,
+    RuleAction,
+    RuleCondition,
+    RuleSeverity,
+    RuleType,
+)
 from ...repositories.formance import FormanceRepository
-
+from ...services.compliance import ComplianceService
+from ..dependencies import get_formance_client
 
 router = APIRouter(prefix="/compliance", tags=["compliance"])
 
@@ -40,12 +38,8 @@ class ComplianceCheckRequest(BaseModel):
     amount: Decimal = Field(..., gt=0, description="Transaction amount")
     currency: str = Field(..., min_length=3, max_length=3, description="Currency code")
     transaction_type: str = Field(..., description="Transaction type")
-    payment_method: Optional[PaymentMethod] = Field(
-        None, description="Payment method"
-    )
-    destination_country: Optional[str] = Field(
-        None, description="Destination country code"
-    )
+    payment_method: PaymentMethod | None = Field(None, description="Payment method")
+    destination_country: str | None = Field(None, description="Destination country code")
     metadata: dict = Field(default_factory=dict, description="Additional metadata")
 
 
@@ -54,9 +48,7 @@ class ComplianceCheckResponse(BaseModel):
 
     compliance_check: ComplianceCheck
     approved: bool = Field(..., description="Whether transaction is approved")
-    requires_review: bool = Field(
-        ..., description="Whether manual review is required"
-    )
+    requires_review: bool = Field(..., description="Whether manual review is required")
     blocked: bool = Field(..., description="Whether transaction is blocked")
     message: str = Field(..., description="Result message")
 
@@ -65,7 +57,7 @@ class ManualReviewRequest(BaseModel):
     """Manual review action request"""
 
     reviewed_by: str = Field(..., description="User ID performing review")
-    notes: Optional[str] = Field(None, description="Review notes")
+    notes: str | None = Field(None, description="Review notes")
 
 
 class RejectRequest(BaseModel):
@@ -78,26 +70,18 @@ class RejectRequest(BaseModel):
 class CreateRuleRequest(BaseModel):
     """Create compliance rule request"""
 
-    organization_id: Optional[str] = Field(
-        None, description="Organization ID (None for global)"
-    )
+    organization_id: str | None = Field(None, description="Organization ID (None for global)")
     name: str = Field(..., description="Rule name")
     description: str = Field(..., description="Rule description")
     rule_type: RuleType = Field(..., description="Rule type")
-    conditions: list[RuleCondition] = Field(
-        default_factory=list, description="Rule conditions"
-    )
+    conditions: list[RuleCondition] = Field(default_factory=list, description="Rule conditions")
     conditions_logic: str = Field(default="AND", description="AND or OR")
     action: RuleAction = Field(..., description="Action when triggered")
     severity: RuleSeverity = Field(..., description="Severity level")
-    risk_score_impact: int = Field(
-        default=0, ge=0, le=100, description="Risk score impact"
-    )
-    message: Optional[str] = Field(None, description="Message when triggered")
+    risk_score_impact: int = Field(default=0, ge=0, le=100, description="Risk score impact")
+    message: str | None = Field(None, description="Message when triggered")
     enabled: bool = Field(default=True, description="Whether rule is active")
-    priority: int = Field(
-        default=100, ge=1, le=1000, description="Evaluation priority"
-    )
+    priority: int = Field(default=100, ge=1, le=1000, description="Evaluation priority")
 
 
 # Dependency to get compliance service
@@ -192,12 +176,12 @@ async def get_compliance_check(
 
 @router.get("/checks", response_model=list[ComplianceCheck])
 async def list_compliance_checks(
-    organization_id: Optional[str] = Query(None, description="Filter by organization"),
-    customer_id: Optional[str] = Query(None, description="Filter by customer"),
-    status_filter: Optional[ComplianceStatus] = Query(
+    organization_id: str | None = Query(None, description="Filter by organization"),
+    customer_id: str | None = Query(None, description="Filter by customer"),
+    status_filter: ComplianceStatus | None = Query(
         None, alias="status", description="Filter by status"
     ),
-    risk_level: Optional[RiskLevel] = Query(None, description="Filter by risk level"),
+    risk_level: RiskLevel | None = Query(None, description="Filter by risk level"),
     limit: int = Query(50, ge=1, le=100, description="Number of results"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     compliance_service: ComplianceService = Depends(get_compliance_service),
@@ -329,9 +313,9 @@ async def create_compliance_rule(
 
 @router.get("/rules", response_model=list[ComplianceRule])
 async def list_compliance_rules(
-    organization_id: Optional[str] = Query(None, description="Filter by organization"),
-    rule_type: Optional[RuleType] = Query(None, description="Filter by rule type"),
-    enabled: Optional[bool] = Query(None, description="Filter by enabled status"),
+    organization_id: str | None = Query(None, description="Filter by organization"),
+    rule_type: RuleType | None = Query(None, description="Filter by rule type"),
+    enabled: bool | None = Query(None, description="Filter by enabled status"),
     limit: int = Query(50, ge=1, le=100, description="Number of results"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     compliance_service: ComplianceService = Depends(get_compliance_service),
@@ -424,8 +408,8 @@ async def delete_compliance_rule(
 @router.get("/reports/summary")
 async def get_compliance_summary(
     organization_id: str = Query(..., description="Organization ID"),
-    start_date: Optional[str] = Query(None, description="Start date (ISO 8601)"),
-    end_date: Optional[str] = Query(None, description="End date (ISO 8601)"),
+    start_date: str | None = Query(None, description="Start date (ISO 8601)"),
+    end_date: str | None = Query(None, description="End date (ISO 8601)"),
     compliance_service: ComplianceService = Depends(get_compliance_service),
 ):
     """

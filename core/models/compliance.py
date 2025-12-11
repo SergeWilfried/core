@@ -5,7 +5,8 @@ Compliance domain models for KYC/AML and transaction monitoring
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, Any
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -72,21 +73,13 @@ class ComplianceCheck(BaseModel):
     organization_id: str = Field(..., description="Organization ID")
     check_type: ComplianceCheckType = Field(..., description="Type of check")
     status: ComplianceStatus = Field(..., description="Check result status")
-    risk_level: RiskLevel = Field(
-        default=RiskLevel.LOW, description="Risk level assessment"
-    )
+    risk_level: RiskLevel = Field(default=RiskLevel.LOW, description="Risk level assessment")
 
     # Subject of the check
-    customer_id: Optional[str] = Field(
-        None, description="Customer being checked"
-    )
-    account_id: Optional[str] = Field(None, description="Account being checked")
-    transaction_id: Optional[str] = Field(
-        None, description="Transaction being checked"
-    )
-    payment_id: Optional[str] = Field(
-        None, description="Payment being checked"
-    )
+    customer_id: str | None = Field(None, description="Customer being checked")
+    account_id: str | None = Field(None, description="Account being checked")
+    transaction_id: str | None = Field(None, description="Transaction being checked")
+    payment_id: str | None = Field(None, description="Payment being checked")
 
     # Check details
     rules_evaluated: list[str] = Field(
@@ -95,10 +88,8 @@ class ComplianceCheck(BaseModel):
     rules_triggered: list[str] = Field(
         default_factory=list, description="Rules that were triggered"
     )
-    reason: Optional[str] = Field(None, description="Reason for status")
-    details: dict[str, Any] = Field(
-        default_factory=dict, description="Additional check details"
-    )
+    reason: str | None = Field(None, description="Reason for status")
+    details: dict[str, Any] = Field(default_factory=dict, description="Additional check details")
 
     # Sanctions screening results
     sanctions_matches: list[dict] = Field(
@@ -106,34 +97,22 @@ class ComplianceCheck(BaseModel):
     )
 
     # Scoring
-    risk_score: int = Field(
-        default=0, ge=0, le=100, description="Risk score (0-100)"
-    )
+    risk_score: int = Field(default=0, ge=0, le=100, description="Risk score (0-100)")
 
     # Review tracking
-    requires_manual_review: bool = Field(
-        default=False, description="Requires manual review"
-    )
-    reviewed_by: Optional[str] = Field(
-        None, description="User ID who reviewed"
-    )
-    reviewed_at: Optional[datetime] = Field(
-        None, description="When it was reviewed"
-    )
-    review_notes: Optional[str] = Field(None, description="Review notes")
+    requires_manual_review: bool = Field(default=False, description="Requires manual review")
+    reviewed_by: str | None = Field(None, description="User ID who reviewed")
+    reviewed_at: datetime | None = Field(None, description="When it was reviewed")
+    review_notes: str | None = Field(None, description="Review notes")
 
     # Timestamps
     created_at: datetime = Field(
         default_factory=datetime.utcnow, description="When check was performed"
     )
-    expires_at: Optional[datetime] = Field(
-        None, description="When check expires"
-    )
+    expires_at: datetime | None = Field(None, description="When check expires")
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
     def is_approved(self) -> bool:
         """Check if compliance check approved"""
@@ -145,10 +124,7 @@ class ComplianceCheck(BaseModel):
 
     def needs_review(self) -> bool:
         """Check if compliance check needs review"""
-        return (
-            self.status == ComplianceStatus.REVIEW
-            or self.requires_manual_review
-        )
+        return self.status == ComplianceStatus.REVIEW or self.requires_manual_review
 
     def is_high_risk(self) -> bool:
         """Check if high risk"""
@@ -162,53 +138,35 @@ class RiskScore(BaseModel):
     organization_id: str = Field(..., description="Organization ID")
 
     # Subject
-    customer_id: Optional[str] = Field(None, description="Customer ID")
-    account_id: Optional[str] = Field(None, description="Account ID")
-    transaction_id: Optional[str] = Field(None, description="Transaction ID")
+    customer_id: str | None = Field(None, description="Customer ID")
+    account_id: str | None = Field(None, description="Account ID")
+    transaction_id: str | None = Field(None, description="Transaction ID")
 
     # Score
-    overall_score: int = Field(
-        ..., ge=0, le=100, description="Overall risk score (0-100)"
-    )
+    overall_score: int = Field(..., ge=0, le=100, description="Overall risk score (0-100)")
     risk_level: RiskLevel = Field(..., description="Risk level")
 
     # Score components
     kyc_score: int = Field(default=0, ge=0, le=100, description="KYC score")
-    transaction_score: int = Field(
-        default=0, ge=0, le=100, description="Transaction pattern score"
-    )
-    geographic_score: int = Field(
-        default=0, ge=0, le=100, description="Geographic risk score"
-    )
-    velocity_score: int = Field(
-        default=0, ge=0, le=100, description="Velocity score"
-    )
-    sanctions_score: int = Field(
-        default=0, ge=0, le=100, description="Sanctions screening score"
-    )
+    transaction_score: int = Field(default=0, ge=0, le=100, description="Transaction pattern score")
+    geographic_score: int = Field(default=0, ge=0, le=100, description="Geographic risk score")
+    velocity_score: int = Field(default=0, ge=0, le=100, description="Velocity score")
+    sanctions_score: int = Field(default=0, ge=0, le=100, description="Sanctions screening score")
 
     # Factors
-    risk_factors: list[str] = Field(
-        default_factory=list, description="Risk factors identified"
-    )
+    risk_factors: list[str] = Field(default_factory=list, description="Risk factors identified")
 
     # Details
-    details: dict[str, Any] = Field(
-        default_factory=dict, description="Score calculation details"
-    )
+    details: dict[str, Any] = Field(default_factory=dict, description="Score calculation details")
 
     # Timestamps
     calculated_at: datetime = Field(
         default_factory=datetime.utcnow, description="When score was calculated"
     )
-    valid_until: Optional[datetime] = Field(
-        None, description="Score validity period"
-    )
+    valid_until: datetime | None = Field(None, description="Score validity period")
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
     @classmethod
     def calculate_risk_level(cls, score: int) -> RiskLevel:
@@ -228,47 +186,29 @@ class SanctionMatch(BaseModel):
 
     id: str = Field(..., description="Match ID")
     organization_id: str = Field(..., description="Organization ID")
-    compliance_check_id: str = Field(
-        ..., description="Associated compliance check ID"
-    )
+    compliance_check_id: str = Field(..., description="Associated compliance check ID")
 
     # Match subject
-    customer_id: Optional[str] = Field(None, description="Customer ID")
+    customer_id: str | None = Field(None, description="Customer ID")
     entity_name: str = Field(..., description="Name that was screened")
 
     # Match details
     list_type: SanctionListType = Field(..., description="Sanction list type")
     match_name: str = Field(..., description="Name from sanction list")
-    match_score: float = Field(
-        ..., ge=0, le=1, description="Match confidence score (0-1)"
-    )
-    match_type: str = Field(
-        default="exact", description="Match type: exact, fuzzy, alias"
-    )
+    match_score: float = Field(..., ge=0, le=1, description="Match confidence score (0-1)")
+    match_type: str = Field(default="exact", description="Match type: exact, fuzzy, alias")
 
     # Sanction details
     sanction_id: str = Field(..., description="ID from sanction list")
-    program: Optional[str] = Field(
-        None, description="Sanctions program (e.g., SDGT, IRAN)"
-    )
-    country: Optional[str] = Field(
-        None, description="Country associated with sanction"
-    )
-    aliases: list[str] = Field(
-        default_factory=list, description="Known aliases"
-    )
-    remarks: Optional[str] = Field(None, description="Additional remarks")
+    program: str | None = Field(None, description="Sanctions program (e.g., SDGT, IRAN)")
+    country: str | None = Field(None, description="Country associated with sanction")
+    aliases: list[str] = Field(default_factory=list, description="Known aliases")
+    remarks: str | None = Field(None, description="Additional remarks")
 
     # Status
-    is_false_positive: bool = Field(
-        default=False, description="Marked as false positive"
-    )
-    reviewed_by: Optional[str] = Field(
-        None, description="User who reviewed"
-    )
-    reviewed_at: Optional[datetime] = Field(
-        None, description="When reviewed"
-    )
+    is_false_positive: bool = Field(default=False, description="Marked as false positive")
+    reviewed_by: str | None = Field(None, description="User who reviewed")
+    reviewed_at: datetime | None = Field(None, description="When reviewed")
 
     # Timestamps
     detected_at: datetime = Field(
@@ -276,9 +216,7 @@ class SanctionMatch(BaseModel):
     )
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class VelocityCheck(BaseModel):
@@ -287,41 +225,25 @@ class VelocityCheck(BaseModel):
     id: str = Field(..., description="Velocity check ID")
     organization_id: str = Field(..., description="Organization ID")
     customer_id: str = Field(..., description="Customer ID")
-    account_id: Optional[str] = Field(None, description="Account ID")
+    account_id: str | None = Field(None, description="Account ID")
 
     # Time period
-    period: str = Field(
-        ..., description="Time period: hourly, daily, weekly, monthly"
-    )
+    period: str = Field(..., description="Time period: hourly, daily, weekly, monthly")
     start_time: datetime = Field(..., description="Period start")
     end_time: datetime = Field(..., description="Period end")
 
     # Metrics
-    transaction_count: int = Field(
-        default=0, description="Number of transactions"
-    )
-    total_amount: Decimal = Field(
-        default=Decimal("0"), description="Total amount"
-    )
-    average_amount: Decimal = Field(
-        default=Decimal("0"), description="Average amount"
-    )
-    max_amount: Decimal = Field(
-        default=Decimal("0"), description="Maximum amount"
-    )
+    transaction_count: int = Field(default=0, description="Number of transactions")
+    total_amount: Decimal = Field(default=Decimal("0"), description="Total amount")
+    average_amount: Decimal = Field(default=Decimal("0"), description="Average amount")
+    max_amount: Decimal = Field(default=Decimal("0"), description="Maximum amount")
 
     # Limits
-    count_limit: Optional[int] = Field(
-        None, description="Transaction count limit"
-    )
-    amount_limit: Optional[Decimal] = Field(
-        None, description="Amount limit"
-    )
+    count_limit: int | None = Field(None, description="Transaction count limit")
+    amount_limit: Decimal | None = Field(None, description="Amount limit")
 
     # Status
-    limit_exceeded: bool = Field(
-        default=False, description="Whether limit was exceeded"
-    )
+    limit_exceeded: bool = Field(default=False, description="Whether limit was exceeded")
     exceeded_limits: list[str] = Field(
         default_factory=list, description="Which limits were exceeded"
     )
@@ -332,9 +254,7 @@ class VelocityCheck(BaseModel):
     )
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class ComplianceAlert(BaseModel):
@@ -346,32 +266,24 @@ class ComplianceAlert(BaseModel):
     severity: RiskLevel = Field(..., description="Alert severity")
 
     # Subject
-    customer_id: Optional[str] = Field(None, description="Customer ID")
-    account_id: Optional[str] = Field(None, description="Account ID")
-    transaction_id: Optional[str] = Field(None, description="Transaction ID")
-    payment_id: Optional[str] = Field(None, description="Payment ID")
+    customer_id: str | None = Field(None, description="Customer ID")
+    account_id: str | None = Field(None, description="Account ID")
+    transaction_id: str | None = Field(None, description="Transaction ID")
+    payment_id: str | None = Field(None, description="Payment ID")
 
     # Alert details
     title: str = Field(..., description="Alert title")
     description: str = Field(..., description="Alert description")
-    indicators: list[str] = Field(
-        default_factory=list, description="Risk indicators"
-    )
+    indicators: list[str] = Field(default_factory=list, description="Risk indicators")
 
     # Status
     status: str = Field(
         default="open", description="Status: open, investigating, resolved, false_positive"
     )
-    assigned_to: Optional[str] = Field(
-        None, description="User assigned to investigate"
-    )
-    resolved_by: Optional[str] = Field(None, description="User who resolved")
-    resolved_at: Optional[datetime] = Field(
-        None, description="When resolved"
-    )
-    resolution_notes: Optional[str] = Field(
-        None, description="Resolution notes"
-    )
+    assigned_to: str | None = Field(None, description="User assigned to investigate")
+    resolved_by: str | None = Field(None, description="User who resolved")
+    resolved_at: datetime | None = Field(None, description="When resolved")
+    resolution_notes: str | None = Field(None, description="Resolution notes")
 
     # Timestamps
     created_at: datetime = Field(
@@ -379,9 +291,7 @@ class ComplianceAlert(BaseModel):
     )
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class ComplianceReport(BaseModel):
@@ -389,39 +299,25 @@ class ComplianceReport(BaseModel):
 
     id: str = Field(..., description="Report ID")
     organization_id: str = Field(..., description="Organization ID")
-    report_type: str = Field(
-        ..., description="Report type: SAR, CTR, STR, etc."
-    )
+    report_type: str = Field(..., description="Report type: SAR, CTR, STR, etc.")
 
     # Period
     start_date: datetime = Field(..., description="Report period start")
     end_date: datetime = Field(..., description="Report period end")
 
     # Summary
-    total_transactions: int = Field(
-        default=0, description="Total transactions"
-    )
-    flagged_transactions: int = Field(
-        default=0, description="Flagged transactions"
-    )
-    blocked_transactions: int = Field(
-        default=0, description="Blocked transactions"
-    )
-    total_amount: Decimal = Field(
-        default=Decimal("0"), description="Total amount"
-    )
+    total_transactions: int = Field(default=0, description="Total transactions")
+    flagged_transactions: int = Field(default=0, description="Flagged transactions")
+    blocked_transactions: int = Field(default=0, description="Blocked transactions")
+    total_amount: Decimal = Field(default=Decimal("0"), description="Total amount")
 
     # Details
-    details: dict[str, Any] = Field(
-        default_factory=dict, description="Report details"
-    )
+    details: dict[str, Any] = Field(default_factory=dict, description="Report details")
 
     # Status
-    status: str = Field(
-        default="draft", description="Status: draft, submitted, filed"
-    )
-    filed_by: Optional[str] = Field(None, description="User who filed")
-    filed_at: Optional[datetime] = Field(None, description="When filed")
+    status: str = Field(default="draft", description="Status: draft, submitted, filed")
+    filed_by: str | None = Field(None, description="User who filed")
+    filed_at: datetime | None = Field(None, description="When filed")
 
     # Timestamps
     generated_at: datetime = Field(
@@ -429,6 +325,4 @@ class ComplianceReport(BaseModel):
     )
 
     # Metadata
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")

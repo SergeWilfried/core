@@ -13,17 +13,10 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import List, Dict
 
-from ..models.regulatory import (
-    ReportType,
-    ReportStatus,
-    SuspiciousActivityType,
-)
-from ..models.compliance import ComplianceAlert, RiskLevel
-from ..services.regulatory import RegulatoryReportingService
-from ..services.compliance import ComplianceService
 from ..repositories.formance import FormanceRepository
+from ..services.compliance import ComplianceService
+from ..services.regulatory import RegulatoryReportingService
 
 logger = logging.getLogger(__name__)
 
@@ -162,9 +155,7 @@ class RegulatoryReportingWorker:
                         await self._notify_ctr_generated(org_id, ctr)
 
                     except Exception as e:
-                        logger.error(
-                            f"Failed to generate CTR for customer {customer_id}: {e}"
-                        )
+                        logger.error(f"Failed to generate CTR for customer {customer_id}: {e}")
 
             except Exception as e:
                 logger.error(f"CTR processing failed for org {org_id}: {e}")
@@ -222,7 +213,7 @@ class RegulatoryReportingWorker:
         start_date: datetime,
         end_date: datetime,
         threshold: Decimal,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Get transactions that qualify for CTR
 
@@ -244,9 +235,7 @@ class RegulatoryReportingWorker:
 
         return []
 
-    def _group_transactions_by_customer(
-        self, transactions: List[Dict]
-    ) -> Dict[str, List[str]]:
+    def _group_transactions_by_customer(self, transactions: list[dict]) -> dict[str, list[str]]:
         """
         Group transactions by customer
 
@@ -256,7 +245,7 @@ class RegulatoryReportingWorker:
         Returns:
             Dict mapping customer_id to list of transaction_ids
         """
-        customer_txns: Dict[str, List[str]] = {}
+        customer_txns: dict[str, list[str]] = {}
 
         for txn in transactions:
             customer_id = txn.get("customer_id")
@@ -311,8 +300,8 @@ async def run_regulatory_reporting_worker(
 
 if __name__ == "__main__":
     # Example usage
-    from ...repositories.formance import FormanceRepository
     from ...config import settings
+    from ...repositories.formance import FormanceRepository
 
     async def main():
         repository = FormanceRepository(
